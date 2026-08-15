@@ -2404,8 +2404,26 @@ async function refreshTimeSlots(){
 async function submitForm(event){
     event.preventDefault();
 
+    const name = document.getElementById("name").value.trim();
+    const phone = document.getElementById("phone").value.trim();
+    const service = document.getElementById("service").value;
     const date = document.getElementById("preferredDate").value;
     const time = document.getElementById("preferredTime").value;
+
+    if(name.length < 2){
+        showCustomAlert("이름을 2글자 이상 입력해주세요.");
+        return;
+    }
+
+    if(phone.replace(/\D/g,"").length < 10){
+        showCustomAlert("전화번호를 숫자 10자리 이상 정확히 입력해주세요.");
+        return;
+    }
+
+    if(!service){
+        showCustomAlert("에어컨 종류를 선택해주세요.");
+        return;
+    }
 
     if(!date || !time){
         showCustomAlert("희망 방문일과 방문시간을 선택해주세요.");
@@ -2430,10 +2448,10 @@ async function submitForm(event){
         }
 
         await apiCreate({
-            name: document.getElementById("name").value.trim(),
-            phone: document.getElementById("phone").value.trim(),
+            name: name,
+            phone: phone,
             address: document.getElementById("address").value.trim(),
-            type: document.getElementById("service").value,
+            type: service,
             count: Number(document.getElementById("quantity").value || 1),
             date: date,
             time: time,
