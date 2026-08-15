@@ -2089,7 +2089,7 @@ footer{
 
                     <div class="form-group">
                         <label>에어컨 종류 *</label>
-                        <select id="service" required>
+                        <select id="serviceType" required>
                             <option value="">선택해주세요</option>
                             <option value="벽걸이">벽걸이</option>
                             <option value="스탠드">스탠드</option>
@@ -2312,6 +2312,20 @@ async function submitForm(event){
         return;
     }
 
+    const name = document.getElementById("name").value.trim();
+    const phone = document.getElementById("phone").value.trim();
+    const phoneDigits = phone.replace(/[^0-9]/g, "");
+
+    if(name.length < 2){
+        alert("이름을 2글자 이상 입력해주세요.");
+        return;
+    }
+
+    if(phoneDigits.length < 10){
+        alert("연락처를 정확히 입력해주세요. (숫자 10자리 이상)");
+        return;
+    }
+
     const submitBtn = event.target.querySelector(".submit");
     submitBtn.disabled = true;
     submitBtn.innerText = "접수 중...";
@@ -2330,10 +2344,10 @@ async function submitForm(event){
         }
 
         await apiCreate({
-            name: document.getElementById("name").value.trim(),
-            phone: document.getElementById("phone").value.trim(),
+            name: name,
+            phone: phone,
             address: document.getElementById("address").value.trim(),
-            type: document.getElementById("service").value,
+            type: document.getElementById("serviceType").value,
             count: Number(document.getElementById("quantity").value || 1),
             date: date,
             time: time,

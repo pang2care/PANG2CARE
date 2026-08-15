@@ -1,21 +1,7 @@
-/*
-  팡이케어 예약 데이터를 저장하는 구글 시트용 Apps Script입니다.
-  구글 스프레드시트 > 확장 프로그램 > Apps Script 에 이 파일 내용을 그대로 붙여넣고,
-  웹 앱으로 배포한 뒤 발급되는 URL을 sheet-config.js 의 SHEET_API_URL 에 입력하세요.
-
-  시트에는 아래 순서 그대로 한 줄씩 사람이 읽기 쉽게 기록됩니다.
-  접수시간 · 이름 · 연락처 · 에어컨 종류 · 견적 · 주소지 · 날짜 · 방문시간 · 수량 · 문의사항
-  (상태/관리자메모/처리이력/id 는 예약 승인·취소·삭제 기능을 위해 뒤쪽에 함께 기록됩니다)
-
-  "상태" 칸은 시트에서 셀을 클릭하면 드롭다운으로 바로 바꿀 수 있습니다.
-  예약대기 / 예약확정 / 작업진행중 / 작업완료 / 취소요청(고객) / 예약취소
-  여기서 직접 바꾼 상태는 홈페이지·관리자 페이지에도 그대로 반영됩니다.
-*/
-
 const SHEET_NAME = "reservations";
 
 // 관리자만 아는 비밀번호로 반드시 바꿔주세요.
-const ADMIN_KEY = "여기에_관리자_비밀번호_설정";
+const ADMIN_KEY = "1354";
 
 const COLUMNS = [
     { key: "createdAt", label: "접수시간" },
@@ -70,8 +56,50 @@ function getSheet_(){
     // 날짜/시간 같은 값을 시트가 자기 마음대로 날짜 형식으로 바꿔버리는 것을 막습니다.
     applyPlainTextFormat_(sheet);
     applyStatusDropdown_(sheet);
+    applyMonthColors_(sheet);
 
     return sheet;
+}
+
+// 예약 날짜(월)를 기준으로 행 전체에 은은한 배경색을 입혀서 시트에서 달별로 한눈에 구분되게 합니다.
+const MONTH_COLORS = [
+    "#fdeceb", // 1월
+    "#fdf3e6", // 2월
+    "#fdfbe6", // 3월
+    "#eef8ea", // 4월
+    "#e9f7f0", // 5월
+    "#e7f6f7", // 6월
+    "#e8f1fb", // 7월
+    "#ecebfa", // 8월
+    "#f5eafa", // 9월
+    "#faeaf3", // 10월
+    "#f2e9e4", // 11월
+    "#eceeee"  // 12월
+];
+
+function monthColor_(dateText){
+    const parts = String(dateText || "").split("-");
+    if(parts.length !== 3) return "#ffffff";
+
+    const month = Number(parts[1]);
+    if(isNaN(month) || month < 1 || month > 12) return "#ffffff";
+
+    return MONTH_COLORS[month - 1];
+}
+
+function applyMonthColors_(sheet){
+    const lastRow = sheet.getLastRow();
+    if(lastRow < 2) return;
+
+    const dateIdx = COLUMNS.findIndex(c => c.key === "date");
+    const dateValues = sheet.getRange(2, dateIdx + 1, lastRow - 1, 1).getValues();
+
+    const backgrounds = dateValues.map(row => {
+        const color = monthColor_(row[0]);
+        return new Array(COLUMNS.length).fill(color);
+    });
+
+    sheet.getRange(2, 1, lastRow - 1, COLUMNS.length).setBackgrounds(backgrounds);
 }
 
 // 모든 데이터 칸을 "일반 텍스트" 서식으로 고정합니다. (날짜/시간 값이 자동 변환되는 것 방지)
@@ -114,15 +142,8 @@ function doGet(e){
     return jsonOutput_({ ok: true, reservations: list });
 }
 
-/*
-  예약확정 → 방문 시간이 되면 자동으로 "작업진행중"
-  작업진행중 → 방문 시간으로부터 3시간이 지나면 자동으로 "작업완료"
-
-  이 함수는 (1) 누군가 홈페이지/관리자 페이지를 열 때마다 자동 실행되고,
-  (2) 트리거를 등록해두면 아무도 페이지를 안 열어도 주기적으로 자동 실행됩니다.
-  트리거 등록: Apps Script 편집기 왼쪽 시계 아이콘 → 트리거 추가 →
-  함수: autoUpdateStatuses / 이벤트 소스: 시간 기반 / 분 단위 타이머(예: 10분마다)
-*/
+// 예약확정은 방문 시간이 되면 자동으로 작업진행중으로, 작업진행중은 방문 시간+3시간이 지나면 자동으로 작업완료로 바뀝니다.
+// 트리거 등록: Apps Script 편집기 왼쪽 시계 아이콘 -> 트리거 추가 -> 함수: autoUpdateStatuses -> 시간 기반 -> 분 단위 타이머
 function autoUpdateStatuses(){
     autoUpdateStatuses_(getSheet_());
 }
