@@ -2161,9 +2161,9 @@ footer{
                 <div class="form-row">
 
                     <div class="form-group">
-                        <label>에어컨 종류 *</label>
-                        <select id="serviceType" required>
-                            <option value="">선택해주세요</option>
+                        <label>에어컨 종류 (선택)</label>
+                        <select id="serviceType">
+                            <option value="">방문 후 확인하여 관리자가 입력합니다</option>
                             <option value="벽걸이">벽걸이</option>
                             <option value="스탠드">스탠드</option>
                             <option value="벽걸이 + 스탠드">벽걸이 + 스탠드</option>
@@ -2417,11 +2417,6 @@ async function submitForm(event){
 
     if(phone.replace(/\D/g,"").length < 10){
         showCustomAlert("전화번호를 숫자 10자리 이상 정확히 입력해주세요.");
-        return;
-    }
-
-    if(!service){
-        showCustomAlert("에어컨 종류를 선택해주세요.");
         return;
     }
 
