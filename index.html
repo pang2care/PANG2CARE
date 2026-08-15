@@ -469,7 +469,7 @@ section{
 
 .detail-image{
     height:210px;
-    position:relative;
+    position:relative;ㅜ 
     background:
     linear-gradient(
         135deg,
@@ -2253,43 +2253,17 @@ footer{
 </a>
 
 
+<script src="sheet-config.js"></script>
+<script src="reservations-api.js"></script>
+
 <script>
 
-/* 관리자 달력(admin.html)과 동일한 localStorage 키 / 데이터 구조를 사용합니다. */
-
-const RESERVATION_KEY = "pangicareReservations";
-
-const TIME_SLOTS = ["09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00"];
-
-const STATUS_LABEL = {
-    pending: "예약대기",
-    confirmed: "예약확정",
-    work: "작업중",
-    completed: "작업완료",
-    cancel_requested: "취소요청",
-    cancelled: "취소완료"
-};
-
-const STATUS_COLOR = {
-    pending: "#f2ad35",
-    confirmed: "#087f8c",
-    work: "#1b9c68",
-    completed: "#1677d2",
-    cancel_requested: "#e07b39",
-    cancelled: "#999999"
-};
-
-function getReservations(){
-    return JSON.parse(localStorage.getItem(RESERVATION_KEY) || "[]");
-}
-
-function saveReservations(list){
-    localStorage.setItem(RESERVATION_KEY, JSON.stringify(list));
-}
+/* 구글 시트(Apps Script 웹앱)를 예약 데이터 저장소로 사용합니다.
+   TIME_SLOTS / apiList / apiCreate / apiUpdate 는 reservations-api.js 에 정의되어 있습니다. */
 
 /* 선택한 날짜에 이미 예약된(취소 제외) 시간은 선택할 수 없게 막습니다. */
 
-function refreshTimeSlots(){
+async function refreshTimeSlots(){
     const date = document.getElementById("preferredDate").value;
     const select = document.getElementById("preferredTime");
     const current = select.value;
@@ -2299,8 +2273,18 @@ function refreshTimeSlots(){
         return;
     }
 
+    select.innerHTML = '<option value="">불러오는 중...</option>';
+
+    let list;
+    try{
+        list = await apiList();
+    }catch(err){
+        select.innerHTML = '<option value="">시간 목록을 불러오지 못했습니다</option>';
+        return;
+    }
+
     const booked = new Set(
-        getReservations()
+        list
         .filter(r => r.date === date && r.status !== "cancelled")
         .map(r => r.time)
     );
@@ -2317,7 +2301,7 @@ function refreshTimeSlots(){
     }
 }
 
-function submitForm(event){
+async function submitForm(event){
     event.preventDefault();
 
     const date = document.getElementById("preferredDate").value;
@@ -2328,46 +2312,54 @@ function submitForm(event){
         return;
     }
 
-    const reservations = getReservations();
+    const submitBtn = event.target.querySelector(".submit");
+    submitBtn.disabled = true;
+    submitBtn.innerText = "접수 중...";
 
-    const alreadyBooked = reservations.some(
-        r => r.date === date && r.time === time && r.status !== "cancelled"
-    );
+    try{
+        const list = await apiList();
 
-    if(alreadyBooked){
-        alert("죄송합니다. 선택하신 시간은 방금 다른 고객이 예약했습니다.\n다른 시간을 선택해주세요.");
+        const alreadyBooked = list.some(
+            r => r.date === date && r.time === time && r.status !== "cancelled"
+        );
+
+        if(alreadyBooked){
+            alert("죄송합니다. 선택하신 시간은 방금 다른 고객이 예약했습니다.\n다른 시간을 선택해주세요.");
+            refreshTimeSlots();
+            return;
+        }
+
+        await apiCreate({
+            name: document.getElementById("name").value.trim(),
+            phone: document.getElementById("phone").value.trim(),
+            address: document.getElementById("address").value.trim(),
+            type: document.getElementById("service").value,
+            count: Number(document.getElementById("quantity").value || 1),
+            date: date,
+            time: time,
+            memo: document.getElementById("customerMemo").value.trim(),
+            adminMemo: "",
+            price: "",
+            status: "pending",
+            history: [{ action: "예약 신청", at: new Date().toISOString() }]
+        });
+
+        alert("예약 신청이 접수되었습니다.\n\n관리자 확인 후 예약이 확정됩니다.");
+        event.target.reset();
+        document.getElementById("quantity").value = 1;
         refreshTimeSlots();
-        return;
+
+    }catch(err){
+        alert("예약 접수 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.");
+    }finally{
+        submitBtn.disabled = false;
+        submitBtn.innerText = "예약 신청하기";
     }
-
-    reservations.push({
-        id: (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString()),
-        createdAt: new Date().toISOString(),
-        name: document.getElementById("name").value.trim(),
-        phone: document.getElementById("phone").value.trim(),
-        address: document.getElementById("address").value.trim(),
-        type: document.getElementById("service").value,
-        count: Number(document.getElementById("quantity").value || 1),
-        date: date,
-        time: time,
-        memo: document.getElementById("customerMemo").value.trim(),
-        adminMemo: "",
-        price: "",
-        status: "pending",
-        history: [{ action: "예약 신청", at: new Date().toISOString() }]
-    });
-
-    saveReservations(reservations);
-
-    alert("예약 신청이 접수되었습니다.\n\n관리자 확인 후 예약이 확정됩니다.");
-    event.target.reset();
-    document.getElementById("quantity").value = 1;
-    refreshTimeSlots();
 }
 
 /* 연락처로 나의 예약을 조회하고, 취소를 "요청"합니다. 실제 취소는 관리자 승인 후 처리됩니다. */
 
-function lookupReservations(){
+async function lookupReservations(){
     const phone = document.getElementById("lookupPhone").value.trim();
     const result = document.getElementById("lookupResult");
 
@@ -2376,7 +2368,17 @@ function lookupReservations(){
         return;
     }
 
-    const mine = getReservations()
+    result.innerHTML = '<div class="lookup-empty">조회 중...</div>';
+
+    let list;
+    try{
+        list = await apiList();
+    }catch(err){
+        result.innerHTML = '<div class="lookup-empty">조회 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.</div>';
+        return;
+    }
+
+    const mine = list
         .filter(r => r.phone.replace(/-/g,"") === phone.replace(/-/g,""))
         .sort((a,b) => (b.date+b.time).localeCompare(a.date+a.time));
 
@@ -2417,23 +2419,24 @@ function lookupReservations(){
     }).join("");
 }
 
-function requestCancel(id){
+async function requestCancel(id){
     if(!confirm("예약 취소를 요청하시겠습니까?\n관리자 확인 후 최종 취소 처리됩니다.")) return;
 
-    const reservations = getReservations();
-    const target = reservations.find(r => r.id === id);
-    if(!target) return;
+    try{
+        const list = await apiList();
+        const target = list.find(r => r.id === id);
+        if(!target) return;
 
-    target.status = "cancel_requested";
-    target.history.push({ action: "고객 취소 요청", at: new Date().toISOString() });
+        const history = [...(target.history || []), { action: "고객 취소 요청", at: new Date().toISOString() }];
 
-    saveReservations(reservations);
+        await apiUpdate(id, { status: "cancel_requested", history });
 
-    alert("취소 요청이 접수되었습니다. 관리자 승인 후 최종 취소됩니다.");
-    lookupReservations();
+        alert("취소 요청이 접수되었습니다. 관리자 승인 후 최종 취소됩니다.");
+        lookupReservations();
+    }catch(err){
+        alert("취소 요청 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.");
+    }
 }
-
-refreshTimeSlots();
 
 /* 스크롤 시 요소가 화면에 들어오면 서서히 나타나는 효과 */
 

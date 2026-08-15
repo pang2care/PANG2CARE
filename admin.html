@@ -503,20 +503,113 @@ textarea:focus{
     .form-group.full{ grid-column:auto; }
 }
 
+/* =========================
+   LOGIN SCREEN
+========================= */
+
+.login-screen{
+    position:fixed;
+    inset:0;
+    z-index:2000;
+    background:#0a3238;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+}
+
+.login-box{
+    width:min(360px,100%);
+    background:white;
+    border-radius:16px;
+    padding:36px 30px;
+    text-align:center;
+}
+
+.login-box h2{
+    font-size:21px;
+    margin-bottom:8px;
+}
+
+.login-box p{
+    font-size:13px;
+    color:#748087;
+    margin-bottom:20px;
+}
+
+.login-box input{
+    margin-bottom:14px;
+}
+
+.login-box .btn{
+    width:100%;
+}
+
+.login-error{
+    color:#e34b4b;
+    font-size:13px;
+    margin-top:10px;
+    min-height:16px;
+}
+
+.header-actions{
+    display:flex;
+    align-items:center;
+    gap:14px;
+}
+
+.header-btn{
+    border:1px solid rgba(255,255,255,.5);
+    background:transparent;
+    color:white;
+    border-radius:7px;
+    padding:7px 12px;
+    cursor:pointer;
+    font-size:12px;
+    font-weight:700;
+}
+
+.header-btn:hover{
+    background:rgba(255,255,255,.15);
+}
+
 </style>
 </head>
 
 <body>
 
+<!-- LOGIN SCREEN -->
+
+<div class="login-screen" id="loginScreen">
+    <div class="login-box">
+
+        <h2>팡이케어 관리자</h2>
+        <p>관리자 비밀번호를 입력해주세요.<br>(Apps Script에 설정한 비밀번호와 동일해야 합니다)</p>
+
+        <input type="password" id="loginPassword" placeholder="비밀번호" onkeydown="if(event.key==='Enter') doLogin()">
+
+        <button class="btn btn-primary" onclick="doLogin()">입장하기</button>
+
+        <div class="login-error" id="loginError"></div>
+
+    </div>
+</div>
+
+
 <!-- HEADER -->
 
 <div class="header">
     <div class="logo">팡이<span>케어 관리자</span></div>
-    <div class="today" id="todayText"></div>
+
+    <div class="header-actions">
+        <div class="today" id="todayText"></div>
+        <button class="header-btn" onclick="loadReservations()">새로고침</button>
+        <button class="header-btn" onclick="doLogout()">로그아웃</button>
+    </div>
 </div>
 
 
-<div class="container">
+<div class="container" id="adminApp" style="display:none;">
 
     <!-- DASHBOARD -->
 
@@ -683,37 +776,22 @@ textarea:focus{
 </div>
 
 
+<script src="sheet-config.js"></script>
+<script src="reservations-api.js"></script>
+
 <script>
 
-/* 고객 홈페이지(index.html)와 동일한 localStorage 키 / 데이터 구조를 사용합니다.
-   date, time, name, phone, type, count, address, memo, status, adminMemo, price, history */
+/* 고객 홈페이지(index.html)와 동일한 구글 시트(Apps Script 웹앱)를 예약 데이터 저장소로 사용합니다.
+   date, time, name, phone, type, count, address, memo, status, adminMemo, price, history
+   TIME_SLOTS / STATUS_LABEL / STATUS_COLOR / apiList / apiCreate / apiUpdate / apiDelete 는
+   reservations-api.js 에 정의되어 있습니다. */
 
-const RESERVATION_KEY = "pangicareReservations";
+const ADMIN_KEY_STORAGE = "pangicareAdminKey";
 
-const TIME_SLOTS = ["09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00"];
-
-const STATUS_LABEL = {
-    pending: "예약대기",
-    confirmed: "예약확정",
-    work: "작업중",
-    completed: "작업완료",
-    cancel_requested: "취소요청",
-    cancelled: "취소완료"
-};
-
-const STATUS_COLOR = {
-    pending: "#f2ad35",
-    confirmed: "#087f8c",
-    work: "#1b9c68",
-    completed: "#1677d2",
-    cancel_requested: "#e07b39",
-    cancelled: "#999999"
-};
-
-let reservations = JSON.parse(localStorage.getItem(RESERVATION_KEY)) || [];
-
+let reservations = [];
 let currentDate = new Date();
 let selectedDate = null;
+let pollTimer = null;
 
 /* =========================
    UTIL
@@ -737,13 +815,72 @@ document.getElementById("legend").innerHTML =
         </div>`
     ).join("");
 
-function saveData(){
-    localStorage.setItem(RESERVATION_KEY, JSON.stringify(reservations));
-}
-
 function addHistory(r, action){
     r.history = r.history || [];
     r.history.push({ action, at: new Date().toISOString() });
+}
+
+/* =========================
+   LOGIN / DATA LOADING
+========================= */
+
+function getAdminKey(){
+    return localStorage.getItem(ADMIN_KEY_STORAGE) || "";
+}
+
+function showLoginScreen(message){
+    document.getElementById("loginScreen").style.display = "flex";
+    document.getElementById("adminApp").style.display = "none";
+    document.getElementById("loginError").innerText = message || "";
+    if(pollTimer){ clearInterval(pollTimer); pollTimer = null; }
+}
+
+function showAdminApp(){
+    document.getElementById("loginScreen").style.display = "none";
+    document.getElementById("adminApp").style.display = "block";
+}
+
+function doLogin(){
+    const pw = document.getElementById("loginPassword").value;
+    if(!pw){
+        document.getElementById("loginError").innerText = "비밀번호를 입력해주세요.";
+        return;
+    }
+
+    localStorage.setItem(ADMIN_KEY_STORAGE, pw);
+    showAdminApp();
+    loadReservations();
+
+    if(!pollTimer){
+        pollTimer = setInterval(loadReservations, 20000);
+    }
+}
+
+function doLogout(){
+    localStorage.removeItem(ADMIN_KEY_STORAGE);
+    showLoginScreen();
+}
+
+function handleAdminError(err){
+    const message = String(err && err.message || "");
+
+    if(message.includes("인증")){
+        alert("관리자 비밀번호가 올바르지 않습니다. 다시 입력해주세요.");
+        localStorage.removeItem(ADMIN_KEY_STORAGE);
+        showLoginScreen("비밀번호가 올바르지 않습니다.");
+    }else{
+        alert("처리 중 문제가 발생했습니다: " + message);
+    }
+}
+
+async function loadReservations(){
+    try{
+        reservations = await apiList();
+        renderCalendar();
+        if(selectedDate) renderDayList();
+    }catch(err){
+        console.error(err);
+    }
 }
 
 /* =========================
@@ -873,42 +1010,41 @@ function closeModal(){
     document.getElementById("reservationModal").classList.remove("show");
 }
 
-function saveReservation(e){
+async function saveReservation(e){
     e.preventDefault();
 
     const id = document.getElementById("editId").value;
     const existing = id ? reservations.find(r => r.id === id) : null;
 
     const data = {
-        id: id || (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString()),
-        createdAt: existing ? existing.createdAt : new Date().toISOString(),
         date: document.getElementById("date").value,
         time: document.getElementById("time").value,
         name: document.getElementById("name").value,
         phone: document.getElementById("phone").value,
         type: document.getElementById("type").value,
-        count: document.getElementById("count").value,
+        count: Number(document.getElementById("count").value) || 1,
         address: document.getElementById("address").value,
         memo: document.getElementById("memo").value,
         adminMemo: document.getElementById("adminMemo").value,
         price: existing ? existing.price : "",
         status: existing ? existing.status : "confirmed",
-        history: existing ? existing.history : []
+        history: existing ? (existing.history || []) : []
     };
 
     addHistory(data, existing ? "관리자 수정" : "관리자 직접 등록");
 
-    if(existing){
-        const index = reservations.findIndex(r => r.id === id);
-        reservations[index] = data;
-    }else{
-        reservations.push(data);
-    }
+    try{
+        if(existing){
+            await apiUpdate(id, data, getAdminKey());
+        }else{
+            await apiCreate(data);
+        }
 
-    saveData();
-    closeModal();
-    renderCalendar();
-    if(selectedDate) renderDayList();
+        closeModal();
+        await loadReservations();
+    }catch(err){
+        handleAdminError(err);
+    }
 }
 
 function openReservationDetail(id){
@@ -1062,27 +1198,32 @@ function openAddFromDay(){
    STATUS
 ========================= */
 
-function changeStatus(id, status, historyLabel){
+async function changeStatus(id, status, historyLabel){
 
     const r = reservations.find(x => x.id === id);
     if(!r) return;
 
-    r.status = status;
-    addHistory(r, historyLabel || `상태 변경 → ${STATUS_LABEL[status]}`);
+    const history = [...(r.history || [])];
+    const historyEntry = { action: historyLabel || `상태 변경 → ${STATUS_LABEL[status]}`, at: new Date().toISOString() };
+    history.push(historyEntry);
 
-    saveData();
-    renderCalendar();
-    if(selectedDate) renderDayList();
+    try{
+        await apiUpdate(id, { status, history }, getAdminKey());
+        await loadReservations();
+    }catch(err){
+        handleAdminError(err);
+    }
 }
 
-function deleteReservation(id){
+async function deleteReservation(id){
     if(!confirm("이 예약을 완전히 삭제하시겠습니까?\n삭제는 되돌릴 수 없습니다.")) return;
 
-    reservations = reservations.filter(r => r.id !== id);
-
-    saveData();
-    renderCalendar();
-    if(selectedDate) renderDayList();
+    try{
+        await apiDelete(id, getAdminKey());
+        await loadReservations();
+    }catch(err){
+        handleAdminError(err);
+    }
 }
 
 /* =========================
@@ -1112,7 +1253,13 @@ function updateDashboard(){
    INIT
 ========================= */
 
-renderCalendar();
+if(getAdminKey()){
+    showAdminApp();
+    loadReservations();
+    pollTimer = setInterval(loadReservations, 20000);
+}else{
+    showLoginScreen();
+}
 
 </script>
 
