@@ -1161,6 +1161,79 @@ footer{
     }
 }
 
+/* =========================
+   CUSTOM ALERT MODAL
+========================= */
+
+.custom-alert-overlay{
+    position:fixed;
+    inset:0;
+    z-index:3000;
+    background:rgba(15,30,34,.45);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .2s ease;
+}
+
+.custom-alert-overlay.show{
+    opacity:1;
+    pointer-events:auto;
+}
+
+.custom-alert-box{
+    background:white;
+    border-radius:18px;
+    max-width:380px;
+    width:100%;
+    padding:32px 28px 24px;
+    text-align:center;
+    box-shadow:0 25px 60px rgba(18,60,70,.25);
+    transform:translateY(14px) scale(.97);
+    transition:transform .2s ease;
+}
+
+.custom-alert-overlay.show .custom-alert-box{
+    transform:translateY(0) scale(1);
+}
+
+.custom-alert-icon{
+    width:52px;
+    height:52px;
+    margin:0 auto 16px;
+    border-radius:50%;
+    background:#e4f6f7;
+    color:#087f8c;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:26px;
+    font-weight:900;
+}
+
+.custom-alert-message{
+    font-size:15px;
+    color:#33414a;
+    line-height:1.7;
+    white-space:pre-line;
+    margin-bottom:22px;
+}
+
+.custom-alert-btn{
+    display:inline-block;
+    border:none;
+    cursor:pointer;
+    padding:12px 34px;
+    background:#087f8c;
+    color:white;
+    border-radius:8px;
+    font-weight:800;
+    font-size:14px;
+}
+
 </style>
 </head>
 
@@ -2089,7 +2162,7 @@ footer{
 
                     <div class="form-group">
                         <label>에어컨 종류 *</label>
-                        <select id="serviceType" required>
+                        <select id="service" required>
                             <option value="">선택해주세요</option>
                             <option value="벽걸이">벽걸이</option>
                             <option value="스탠드">스탠드</option>
@@ -2253,6 +2326,17 @@ footer{
 </a>
 
 
+<!-- CUSTOM ALERT MODAL -->
+
+<div id="customAlertOverlay" class="custom-alert-overlay">
+    <div class="custom-alert-box">
+        <div class="custom-alert-icon">!</div>
+        <div id="customAlertMessage" class="custom-alert-message"></div>
+        <button type="button" class="custom-alert-btn" onclick="closeCustomAlert()">확인</button>
+    </div>
+</div>
+
+
 <script src="sheet-config.js"></script>
 <script src="reservations-api.js"></script>
 
@@ -2260,6 +2344,22 @@ footer{
 
 /* 구글 시트(Apps Script 웹앱)를 예약 데이터 저장소로 사용합니다.
    TIME_SLOTS / apiList / apiCreate / apiUpdate 는 reservations-api.js 에 정의되어 있습니다. */
+
+/* 브라우저 기본 alert() 은 사이트 주소가 상단에 함께 표시되므로,
+   대신 사이트 디자인에 맞춘 커스텀 알림창을 사용합니다. */
+
+function showCustomAlert(message){
+    document.getElementById("customAlertMessage").innerText = message;
+    document.getElementById("customAlertOverlay").classList.add("show");
+}
+
+function closeCustomAlert(){
+    document.getElementById("customAlertOverlay").classList.remove("show");
+}
+
+document.getElementById("customAlertOverlay").addEventListener("click", function(e){
+    if(e.target === this) closeCustomAlert();
+});
 
 /* 선택한 날짜에 이미 예약된(취소 제외) 시간은 선택할 수 없게 막습니다. */
 
@@ -2308,21 +2408,7 @@ async function submitForm(event){
     const time = document.getElementById("preferredTime").value;
 
     if(!date || !time){
-        alert("희망 방문일과 방문시간을 선택해주세요.");
-        return;
-    }
-
-    const name = document.getElementById("name").value.trim();
-    const phone = document.getElementById("phone").value.trim();
-    const phoneDigits = phone.replace(/[^0-9]/g, "");
-
-    if(name.length < 2){
-        alert("이름을 2글자 이상 입력해주세요.");
-        return;
-    }
-
-    if(phoneDigits.length < 10){
-        alert("연락처를 정확히 입력해주세요. (숫자 10자리 이상)");
+        showCustomAlert("희망 방문일과 방문시간을 선택해주세요.");
         return;
     }
 
@@ -2338,16 +2424,16 @@ async function submitForm(event){
         );
 
         if(alreadyBooked){
-            alert("죄송합니다. 선택하신 시간은 방금 다른 고객이 예약했습니다.\n다른 시간을 선택해주세요.");
+            showCustomAlert("죄송합니다. 선택하신 시간은 방금 다른 고객이 예약했습니다.\n다른 시간을 선택해주세요.");
             refreshTimeSlots();
             return;
         }
 
         await apiCreate({
-            name: name,
-            phone: phone,
+            name: document.getElementById("name").value.trim(),
+            phone: document.getElementById("phone").value.trim(),
             address: document.getElementById("address").value.trim(),
-            type: document.getElementById("serviceType").value,
+            type: document.getElementById("service").value,
             count: Number(document.getElementById("quantity").value || 1),
             date: date,
             time: time,
@@ -2358,13 +2444,13 @@ async function submitForm(event){
             history: [{ action: "예약 신청", at: new Date().toISOString() }]
         });
 
-        alert("예약 신청이 접수되었습니다.\n\n관리자 확인 후 예약이 확정됩니다.");
+        showCustomAlert("예약 신청이 접수되었습니다.\n\n관리자 확인 후 예약이 확정됩니다.");
         event.target.reset();
         document.getElementById("quantity").value = 1;
         refreshTimeSlots();
 
     }catch(err){
-        alert("예약 접수 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.");
+        showCustomAlert("예약 접수 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.");
     }finally{
         submitBtn.disabled = false;
         submitBtn.innerText = "예약 신청하기";
@@ -2378,7 +2464,7 @@ async function lookupReservations(){
     const result = document.getElementById("lookupResult");
 
     if(!phone){
-        alert("연락처를 입력해주세요.");
+        showCustomAlert("연락처를 입력해주세요.");
         return;
     }
 
@@ -2445,10 +2531,10 @@ async function requestCancel(id){
 
         await apiUpdate(id, { status: "cancel_requested", history });
 
-        alert("취소 요청이 접수되었습니다. 관리자 승인 후 최종 취소됩니다.");
+        showCustomAlert("취소 요청이 접수되었습니다. 관리자 승인 후 최종 취소됩니다.");
         lookupReservations();
     }catch(err){
-        alert("취소 요청 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.");
+        showCustomAlert("취소 요청 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.");
     }
 }
 
