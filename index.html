@@ -9,6 +9,11 @@
 <meta name="description"
 content="팡이케어는 에어컨 청소만을 전문으로 합니다. 벽걸이, 스탠드, 시스템, 업소용 에어컨 분해 세척 및 내부 청소 상담.">
 
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="팡이케어">
+<meta property="og:title" content="팡이케어 | 에어컨청소 전문업체">
+<meta property="og:description" content="팡이케어는 에어컨 청소만을 전문으로 합니다. 벽걸이, 스탠드, 시스템, 업소용 에어컨 분해 세척 및 내부 청소 상담.">
+
 <style>
 :root{
     --ink:#0c1d1f;
@@ -738,6 +743,16 @@ section{
 
 .review small{
     color:#8a9498;
+}
+
+.review-empty{
+    grid-column:1/-1;
+    text-align:center;
+    padding:40px 20px;
+    color:#8a9498;
+    background:white;
+    border-radius:18px;
+    border:1px dashed var(--line);
 }
 
 /* =========================
@@ -2089,7 +2104,7 @@ footer:before{
             </h2>
 
             <p>
-                실제 작업 사진으로 팡이케어의 작업과정을 보여주세요.
+                오염 확인부터 마무리까지, 꼼꼼한 3단계로 진행합니다.
             </p>
 
         </div>
@@ -2189,7 +2204,7 @@ footer:before{
             </h2>
 
             <p>
-                실제 작업한 현장 사진을 이곳에 차례로 채워나가겠습니다.
+                작업 현장 사진을 차례로 준비하고 있습니다.
             </p>
 
         </div>
@@ -2257,7 +2272,7 @@ footer:before{
             </h2>
 
             <p>
-                실제 고객 후기가 쌓이면 이곳에 등록해주세요.
+                아직 등록된 후기가 없습니다. 첫 이용 후기를 남겨주시면 이곳에 소개해드립니다.
             </p>
 
         </div>
@@ -2265,56 +2280,8 @@ footer:before{
 
         <div class="review-grid">
 
-            <div class="review reveal">
-
-                <div class="stars">
-                    ★★★★★
-                </div>
-
-                <p>
-                    "실제 고객 후기 내용을 이곳에 넣어주세요."
-                </p>
-
-                <small>
-                    고객 후기
-                </small>
-
-            </div>
-
-
-            <div class="review reveal">
-
-                <div class="stars">
-                    ★★★★★
-                </div>
-
-                <p>
-                    "청소 전후 사진과 함께 실제 후기를
-                    등록하면 신뢰도를 높일 수 있습니다."
-                </p>
-
-                <small>
-                    고객 후기
-                </small>
-
-            </div>
-
-
-            <div class="review reveal">
-
-                <div class="stars">
-                    ★★★★★
-                </div>
-
-                <p>
-                    "예약 과정이나 작업 만족도에 대한
-                    실제 고객의 이야기를 넣어주세요."
-                </p>
-
-                <small>
-                    고객 후기
-                </small>
-
+            <div class="review-empty reveal">
+                고객 후기 준비중입니다.
             </div>
 
         </div>
@@ -2452,7 +2419,7 @@ footer:before{
 
                     <div class="form-group">
 
-                        <label>
+                        <label for="name">
                             고객명
                         </label>
 
@@ -2467,7 +2434,7 @@ footer:before{
 
                     <div class="form-group">
 
-                        <label>
+                        <label for="phone">
                             연락처
                         </label>
 
@@ -2485,7 +2452,7 @@ footer:before{
                 <div class="form-row">
 
                     <div class="form-group">
-                        <label>에어컨 종류 (선택)</label>
+                        <label for="serviceType">에어컨 종류 (선택)</label>
                         <select id="serviceType">
                             <option value="">방문 후 확인하여 관리자가 입력합니다</option>
                             <option value="벽걸이">벽걸이</option>
@@ -2498,19 +2465,19 @@ footer:before{
                     </div>
 
                     <div class="form-group">
-                        <label>에어컨 수량 *</label>
-                        <input id="quantity" type="number" min="1" value="1" required>
+                        <label for="quantity">에어컨 수량 *</label>
+                        <input id="quantity" type="number" min="1" max="20" value="1" required>
                     </div>
 
                 </div>
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label>희망 방문일 *</label>
+                        <label for="preferredDate">희망 방문일 *</label>
                         <input id="preferredDate" type="date" required onchange="refreshTimeSlots()">
                     </div>
                     <div class="form-group">
-                        <label>희망 방문시간 *</label>
+                        <label for="preferredTime">희망 방문시간 *</label>
                         <select id="preferredTime" required>
                             <option value="">날짜를 먼저 선택해주세요</option>
                         </select>
@@ -2519,12 +2486,12 @@ footer:before{
 
 
                 <div class="form-group">
-                    <label>주소 *</label>
+                    <label for="address">주소 *</label>
                     <input id="address" type="text" placeholder="청소하실 주소를 입력해주세요" required>
                 </div>
 
                 <div class="form-group">
-                    <label>문의사항 / 요청사항</label>
+                    <label for="customerMemo">문의사항 / 요청사항</label>
                     <textarea id="customerMemo" placeholder="주차 여부, 설치 장소, 에어컨 상태, 궁금하신 점 등을 적어주시면 예약과 함께 관리자에게 전달됩니다."></textarea>
                 </div>
 
@@ -2574,7 +2541,7 @@ footer:before{
             <div class="form-row">
 
                 <div class="form-group">
-                    <label>연락처</label>
+                    <label for="lookupPhone">연락처</label>
                     <input id="lookupPhone" type="tel" placeholder="010-0000-0000">
                 </div>
 
@@ -2739,8 +2706,8 @@ async function submitForm(event){
         return;
     }
 
-    if(phone.replace(/\D/g,"").length < 10){
-        showCustomAlert("전화번호를 숫자 10자리 이상 정확히 입력해주세요.");
+    if(!/^01[016789]\d{7,8}$/.test(phone.replace(/\D/g,""))){
+        showCustomAlert("휴대폰 번호를 정확히 입력해주세요. (예: 010-0000-0000)");
         return;
     }
 
@@ -2796,6 +2763,8 @@ async function submitForm(event){
 
 /* 연락처로 나의 예약을 조회하고, 취소를 "요청"합니다. 실제 취소는 관리자 승인 후 처리됩니다. */
 
+let lastLookupList = [];
+
 async function lookupReservations(){
     const phone = document.getElementById("lookupPhone").value.trim();
     const result = document.getElementById("lookupResult");
@@ -2809,15 +2778,15 @@ async function lookupReservations(){
 
     let list;
     try{
-        list = await apiList();
+        list = await apiList({ phone });
     }catch(err){
         result.innerHTML = '<div class="lookup-empty">조회 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.</div>';
         return;
     }
 
-    const mine = list
-        .filter(r => r.phone.replace(/-/g,"") === phone.replace(/-/g,""))
-        .sort((a,b) => (b.date+b.time).localeCompare(a.date+a.time));
+    const mine = list.sort((a,b) => (b.date+b.time).localeCompare(a.date+a.time));
+
+    lastLookupList = mine;
 
     if(mine.length === 0){
         result.innerHTML = '<div class="lookup-empty">해당 연락처로 등록된 예약이 없습니다.</div>';
@@ -2831,16 +2800,16 @@ async function lookupReservations(){
         <div class="lookup-item">
 
             <div class="lookup-item-head">
-                <strong>${r.date} ${r.time}</strong>
+                <strong>${escapeHtml(r.date)} ${escapeHtml(r.time)}</strong>
                 <span class="lookup-badge" style="background:${STATUS_COLOR[r.status]}">
                     ${STATUS_LABEL[r.status]}
                 </span>
             </div>
 
             <div class="lookup-info">
-                ${r.type} ${r.count}대<br>
-                ${r.address}
-                ${r.memo ? `<br>문의사항 : ${r.memo}` : ""}
+                ${escapeHtml(r.type)} ${escapeHtml(r.count)}대<br>
+                ${escapeHtml(r.address)}
+                ${r.memo ? `<br>문의사항 : ${escapeHtml(r.memo)}` : ""}
             </div>
 
             <button
@@ -2860,8 +2829,7 @@ async function requestCancel(id){
     if(!confirm("예약 취소를 요청하시겠습니까?\n관리자 확인 후 최종 취소 처리됩니다.")) return;
 
     try{
-        const list = await apiList();
-        const target = list.find(r => r.id === id);
+        const target = lastLookupList.find(r => r.id === id);
         if(!target) return;
 
         const history = [...(target.history || []), { action: "고객 취소 요청", at: new Date().toISOString() }];

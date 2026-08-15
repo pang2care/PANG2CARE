@@ -692,27 +692,27 @@ textarea:focus{
         <div class="form-grid">
 
             <div class="form-group">
-                <label>예약 날짜</label>
+                <label for="date">예약 날짜</label>
                 <input type="date" id="date" required onchange="refreshAdminTimeOptions()">
             </div>
 
             <div class="form-group">
-                <label>예약 시간</label>
+                <label for="time">예약 시간</label>
                 <select id="time" required></select>
             </div>
 
             <div class="form-group">
-                <label>고객명</label>
+                <label for="name">고객명</label>
                 <input type="text" id="name" placeholder="홍길동" required>
             </div>
 
             <div class="form-group">
-                <label>연락처</label>
+                <label for="phone">연락처</label>
                 <input type="tel" id="phone" placeholder="010-0000-0000">
             </div>
 
             <div class="form-group">
-                <label>에어컨 종류</label>
+                <label for="type">에어컨 종류</label>
                 <select id="type">
                     <option>벽걸이</option>
                     <option>스탠드</option>
@@ -724,22 +724,22 @@ textarea:focus{
             </div>
 
             <div class="form-group">
-                <label>대수</label>
+                <label for="count">대수</label>
                 <input type="number" id="count" value="1" min="1">
             </div>
 
             <div class="form-group full">
-                <label>작업 주소</label>
+                <label for="address">작업 주소</label>
                 <input type="text" id="address" placeholder="작업할 주소">
             </div>
 
             <div class="form-group full">
-                <label>고객 문의 / 요청사항</label>
+                <label for="memo">고객 문의 / 요청사항</label>
                 <textarea id="memo" placeholder="고객 요청사항 / 문의내용 / 주차 / 현장 특이사항"></textarea>
             </div>
 
             <div class="form-group full">
-                <label>관리자 메모 (고객에게 보이지 않음)</label>
+                <label for="adminMemo">관리자 메모 (고객에게 보이지 않음)</label>
                 <textarea id="adminMemo" placeholder="견적, 특이사항 등 내부 메모"></textarea>
             </div>
 
@@ -875,11 +875,11 @@ function handleAdminError(err){
 
 async function loadReservations(){
     try{
-        reservations = await apiList();
+        reservations = await apiList({ adminKey: getAdminKey() });
         renderCalendar();
         if(selectedDate) renderDayList();
     }catch(err){
-        console.error(err);
+        handleAdminError(err);
     }
 }
 
@@ -941,7 +941,7 @@ function renderCalendar(){
                 style="background:${STATUS_COLOR[r.status]}"
                 onclick="event.stopPropagation();openReservationDetail('${r.id}')"
             >
-                ${r.time} ${r.name}
+                ${escapeHtml(r.time)} ${escapeHtml(r.name)}
             </div>
             `;
         });
@@ -1153,29 +1153,29 @@ function renderReservationCard(r){
     <div class="day-reservation ${s === 'cancelled' ? 'cancelled' : ''}" style="border-left-color:${color}">
 
         <div class="res-head">
-            <div class="res-time">${r.time}</div>
+            <div class="res-time">${escapeHtml(r.time)}</div>
             <div class="status" style="background:${color}">${STATUS_LABEL[s]}</div>
         </div>
 
         <div class="res-info">
-            <strong>${r.name}</strong>
-            · <a href="tel:${r.phone}">${r.phone}</a>
+            <strong>${escapeHtml(r.name)}</strong>
+            · <a href="tel:${escapeHtml(r.phone)}">${escapeHtml(r.phone)}</a>
             <br>
-            ${r.type} ${r.count}대
+            ${escapeHtml(r.type)} ${escapeHtml(r.count)}대
             <br>
-            ${r.address || "주소 미입력"}
+            ${escapeHtml(r.address) || "주소 미입력"}
         </div>
 
         ${r.memo ? `
         <div class="res-memo">
             <div class="res-memo-label">고객 문의 / 요청사항</div>
-            ${r.memo}
+            ${escapeHtml(r.memo)}
         </div>` : ""}
 
         ${r.adminMemo ? `
         <div class="res-memo" style="background:#eef6f7;">
             <div class="res-memo-label">관리자 메모</div>
-            ${r.adminMemo}
+            ${escapeHtml(r.adminMemo)}
         </div>` : ""}
 
         <div class="res-actions">${actions}</div>
