@@ -2162,7 +2162,7 @@ footer{
 
                     <div class="form-group">
                         <label>에어컨 종류 *</label>
-                        <select id="service" required>
+                        <select id="serviceType" required>
                             <option value="">선택해주세요</option>
                             <option value="벽걸이">벽걸이</option>
                             <option value="스탠드">스탠드</option>
@@ -2406,7 +2406,7 @@ async function submitForm(event){
 
     const name = document.getElementById("name").value.trim();
     const phone = document.getElementById("phone").value.trim();
-    const service = document.getElementById("service").value;
+    const service = document.getElementById("serviceType").value;
     const date = document.getElementById("preferredDate").value;
     const time = document.getElementById("preferredTime").value;
 
