@@ -101,6 +101,9 @@ function idColumnIndex_(){
 
 function doGet(e){
     const sheet = getSheet_();
+
+    autoUpdateStatuses_(sheet);
+
     const rows = sheet.getDataRange().getValues();
     const idIndex = idColumnIndex_();
 
@@ -109,6 +112,80 @@ function doGet(e){
         .map(row => rowToObject_(row));
 
     return jsonOutput_({ ok: true, reservations: list });
+}
+
+/*
+  예약확정 → 방문 시간이 되면 자동으로 "작업진행중"
+  작업진행중 → 방문 시간으로부터 3시간이 지나면 자동으로 "작업완료"
+
+  이 함수는 (1) 누군가 홈페이지/관리자 페이지를 열 때마다 자동 실행되고,
+  (2) 트리거를 등록해두면 아무도 페이지를 안 열어도 주기적으로 자동 실행됩니다.
+  트리거 등록: Apps Script 편집기 왼쪽 시계 아이콘 → 트리거 추가 →
+  함수: autoUpdateStatuses / 이벤트 소스: 시간 기반 / 분 단위 타이머(예: 10분마다)
+*/
+function autoUpdateStatuses(){
+    autoUpdateStatuses_(getSheet_());
+}
+
+function autoUpdateStatuses_(sheet){
+    const rows = sheet.getDataRange().getValues();
+    const now = new Date();
+
+    const dateIdx = COLUMNS.findIndex(c => c.key === "date");
+    const timeIdx = COLUMNS.findIndex(c => c.key === "time");
+    const statusIdx = COLUMNS.findIndex(c => c.key === "status");
+    const historyIdx = COLUMNS.findIndex(c => c.key === "history");
+
+    for(let r = 1; r < rows.length; r++){
+        const row = rows[r];
+        const key = statusToKey_(row[statusIdx]);
+
+        if(key !== "confirmed" && key !== "work") continue;
+
+        const scheduled = parseScheduledDateTime_(row[dateIdx], row[timeIdx]);
+        if(!scheduled) continue;
+
+        if(key === "confirmed" && now.getTime() >= scheduled.getTime()){
+            setStatusWithHistory_(sheet, r+1, statusIdx, historyIdx, row[historyIdx],
+                "work", "자동 처리: 방문 시간이 되어 작업진행중으로 변경");
+        }else if(key === "work"){
+            const threeHoursLater = scheduled.getTime() + (3 * 60 * 60 * 1000);
+            if(now.getTime() >= threeHoursLater){
+                setStatusWithHistory_(sheet, r+1, statusIdx, historyIdx, row[historyIdx],
+                    "completed", "자동 처리: 방문 시간으로부터 3시간이 지나 작업완료로 변경");
+            }
+        }
+    }
+}
+
+function parseScheduledDateTime_(dateText, timeText){
+    if(!dateText || !timeText) return null;
+
+    const dateParts = String(dateText).split("-");
+    const timeParts = String(timeText).split(":");
+
+    if(dateParts.length !== 3 || timeParts.length < 2) return null;
+
+    const y = Number(dateParts[0]);
+    const m = Number(dateParts[1]) - 1;
+    const d = Number(dateParts[2]);
+    const hh = Number(timeParts[0]);
+    const mm = Number(timeParts[1]);
+
+    if([y,m,d,hh,mm].some(n => isNaN(n))) return null;
+
+    return new Date(y, m, d, hh, mm, 0);
+}
+
+function setStatusWithHistory_(sheet, rowNumber, statusIdx, historyIdx, historyRaw, newStatusKey, actionLabel){
+    let history = [];
+    try{ history = JSON.parse(historyRaw || "[]"); }
+    catch(err){ history = []; }
+
+    history.push({ action: actionLabel, at: nowText_() });
+
+    sheet.getRange(rowNumber, statusIdx+1).setValue(statusToLabel_(newStatusKey));
+    sheet.getRange(rowNumber, historyIdx+1).setValue(JSON.stringify(history));
 }
 
 function rowToObject_(row){
