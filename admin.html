@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>팡이케어 관리자</title>
+
+<style>
+
+*{
+    box-sizing:border-box;
+    margin:0;
+    padding:0;
+}
+
+body{
+    font-family:
+    "Noto Sans KR",
+    "Malgun Gothic",
+    Arial,
+    sans-serif;
+
+    background:#f4f7f9;
+    color:#17232b;
+}
+
+/* =========================
+   HEADER
+========================= */
+
+.header{
+    height:70px;
+    background:#087f8c;
+    color:white;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 25px;
+    position:sticky;
+    top:0;
+    z-index:100;
+}
+
+.logo{
+    font-size:23px;
+    font-weight:900;
+}
+
+.logo span{
+    opacity:.75;
+}
+
+.today{
+    font-size:14px;
+    opacity:.9;
+}
+
+/* =========================
+   LAYOUT
+========================= */
+
+.container{
+    width:min(1400px,96%);
+    margin:25px auto;
+}
+
+/* =========================
+   DASHBOARD
+========================= */
+
+.dashboard{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:15px;
+    margin-bottom:20px;
+}
+
+.stat{
+    background:white;
+    border-radius:12px;
+    padding:20px;
+    box-shadow:0 3px 12px rgba(0,0,0,.05);
+}
+
+.stat.alert{
+    background:#fff3ea;
+    border:1px solid #f3c69b;
+}
+
+.stat-title{
+    color:#748087;
+    font-size:13px;
+    margin-bottom:8px;
+}
+
+.stat-number{
+    font-size:28px;
+    font-weight:900;
+}
+
+.stat-number.blue{ color:#1677d2; }
+.stat-number.green{ color:#087f8c; }
+.stat-number.orange{ color:#e07b39; }
+
+/* =========================
+   CALENDAR
+========================= */
+
+.calendar-box{
+    background:white;
+    border-radius:15px;
+    padding:20px;
+    box-shadow:0 3px 15px rgba(0,0,0,.05);
+}
+
+.calendar-top{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:20px;
+}
+
+.calendar-title{
+    display:flex;
+    align-items:center;
+    gap:15px;
+}
+
+.calendar-title h2{
+    font-size:24px;
+    min-width:150px;
+    text-align:center;
+}
+
+.calendar-btn{
+    border:1px solid #dce4e8;
+    background:white;
+    border-radius:7px;
+    padding:8px 13px;
+    cursor:pointer;
+    font-weight:bold;
+}
+
+.calendar-btn:hover{
+    background:#087f8c;
+    color:white;
+}
+
+.calendar{
+    display:grid;
+    grid-template-columns:repeat(7,1fr);
+    border-top:1px solid #e3e8eb;
+    border-left:1px solid #e3e8eb;
+}
+
+.week{
+    background:#f5f8f9;
+    text-align:center;
+    padding:12px;
+    font-size:13px;
+    font-weight:800;
+    border-right:1px solid #e3e8eb;
+    border-bottom:1px solid #e3e8eb;
+}
+
+.day{
+    min-height:150px;
+    padding:7px;
+    border-right:1px solid #e3e8eb;
+    border-bottom:1px solid #e3e8eb;
+    background:white;
+    cursor:pointer;
+    position:relative;
+}
+
+.day:hover{
+    background:#f7fbfc;
+}
+
+.day.other-month{
+    background:#fafafa;
+    color:#c4cbd0;
+}
+
+.day.today{
+    background:#effbfc;
+}
+
+.day.has-request{
+    box-shadow:inset 0 0 0 2px #e07b39;
+}
+
+.day-number{
+    font-size:13px;
+    font-weight:800;
+    margin-bottom:5px;
+}
+
+/* =========================
+   RESERVATION CHIP
+========================= */
+
+.reservation{
+    padding:5px 6px;
+    border-radius:5px;
+    margin-bottom:4px;
+    font-size:11px;
+    overflow:hidden;
+    white-space:nowrap;
+    text-overflow:ellipsis;
+    cursor:pointer;
+    color:white;
+    font-weight:700;
+}
+
+.reservation:hover{
+    filter:brightness(.95);
+}
+
+.reservation.cancelled{
+    text-decoration:line-through;
+    opacity:.7;
+}
+
+.more{
+    font-size:10px;
+    color:#087f8c;
+    font-weight:bold;
+    margin-top:3px;
+}
+
+/* =========================
+   LEGEND
+========================= */
+
+.legend{
+    display:flex;
+    flex-wrap:wrap;
+    gap:16px;
+    margin-top:15px;
+    font-size:12px;
+    color:#68757c;
+}
+
+.legend-item{
+    display:flex;
+    align-items:center;
+    gap:5px;
+}
+
+.legend-color{
+    width:13px;
+    height:13px;
+    border-radius:3px;
+}
+
+/* =========================
+   MODAL
+========================= */
+
+.modal-bg{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.45);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:1000;
+    padding:20px;
+}
+
+.modal-bg.show{
+    display:flex;
+}
+
+.modal{
+    width:min(650px,100%);
+    max-height:90vh;
+    overflow:auto;
+    background:white;
+    border-radius:15px;
+    padding:25px;
+}
+
+.modal-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:20px;
+}
+
+.modal-header h2{
+    font-size:21px;
+}
+
+.close{
+    border:0;
+    background:#f1f3f4;
+    width:35px;
+    height:35px;
+    border-radius:50%;
+    cursor:pointer;
+    font-size:18px;
+}
+
+/* =========================
+   FORM
+========================= */
+
+.form-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:13px;
+}
+
+.form-group{
+    margin-bottom:14px;
+}
+
+.form-group.full{
+    grid-column:1 / -1;
+}
+
+label{
+    display:block;
+    font-size:12px;
+    font-weight:800;
+    margin-bottom:6px;
+}
+
+input,
+select,
+textarea{
+    width:100%;
+    padding:12px;
+    border:1px solid #dce4e8;
+    border-radius:7px;
+    font-family:inherit;
+    font-size:14px;
+    outline:none;
+}
+
+textarea{
+    min-height:80px;
+    resize:vertical;
+}
+
+input:focus,
+select:focus,
+textarea:focus{
+    border-color:#087f8c;
+}
+
+/* =========================
+   BUTTONS
+========================= */
+
+.buttons{
+    display:flex;
+    gap:8px;
+    margin-top:20px;
+    flex-wrap:wrap;
+}
+
+.btn{
+    border:0;
+    padding:12px 18px;
+    border-radius:7px;
+    cursor:pointer;
+    font-weight:800;
+}
+
+.btn-primary{ background:#087f8c; color:white; }
+.btn-light{ background:#edf1f3; color:#334048; }
+
+/* =========================
+   DAY DETAIL / RESERVATION DETAIL
+========================= */
+
+.day-list{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+}
+
+.day-reservation{
+    border:1px solid #e0e7ea;
+    border-radius:10px;
+    padding:14px;
+    background:#fff;
+    border-left:5px solid #ccc;
+}
+
+.day-reservation.cancelled{
+    opacity:.6;
+}
+
+.res-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:8px;
+    flex-wrap:wrap;
+    gap:6px;
+}
+
+.res-time{
+    font-size:17px;
+    font-weight:900;
+}
+
+.status{
+    font-size:11px;
+    padding:4px 10px;
+    border-radius:20px;
+    color:white;
+    font-weight:800;
+}
+
+.res-info{
+    font-size:13px;
+    color:#5d6970;
+    line-height:1.8;
+}
+
+.res-info a{
+    color:#087f8c;
+    font-weight:700;
+    text-decoration:underline;
+}
+
+.res-memo{
+    margin-top:10px;
+    padding:12px;
+    background:#f6f8f9;
+    border-radius:8px;
+    font-size:13px;
+    color:#3d474d;
+    line-height:1.7;
+    white-space:pre-wrap;
+}
+
+.res-memo-label{
+    font-size:11px;
+    font-weight:900;
+    color:#087f8c;
+    margin-bottom:5px;
+}
+
+.res-actions{
+    display:flex;
+    gap:6px;
+    margin-top:10px;
+    flex-wrap:wrap;
+}
+
+.small-btn{
+    border:0;
+    padding:7px 10px;
+    border-radius:5px;
+    cursor:pointer;
+    font-size:11px;
+    font-weight:700;
+    color:white;
+}
+
+.small-btn.light{
+    background:#edf1f3;
+    color:#334048;
+}
+
+.small-btn.delete{
+    background:#e34b4b;
+}
+
+/* =========================
+   MOBILE
+========================= */
+
+@media(max-width:900px){
+
+    .dashboard{ grid-template-columns:1fr 1fr; }
+    .day{ min-height:110px; }
+    .reservation{ font-size:10px; }
+}
+
+@media(max-width:600px){
+
+    .header{ padding:0 15px; }
+    .logo{ font-size:19px; }
+    .today{ display:none; }
+    .dashboard{ grid-template-columns:1fr 1fr; }
+    .stat{ padding:14px; }
+    .stat-number{ font-size:22px; }
+    .calendar-box{ padding:10px; }
+    .calendar-title h2{ font-size:18px; min-width:100px; }
+    .day{ min-height:90px; padding:4px; }
+    .day-number{ font-size:11px; }
+    .reservation{ font-size:9px; padding:3px; }
+    .legend{ gap:8px; }
+    .form-grid{ grid-template-columns:1fr; }
+    .form-group.full{ grid-column:auto; }
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- HEADER -->
+
+<div class="header">
+    <div class="logo">팡이<span>케어 관리자</span></div>
+    <div class="today" id="todayText"></div>
+</div>
+
+
+<div class="container">
+
+    <!-- DASHBOARD -->
+
+    <div class="dashboard">
+
+        <div class="stat">
+            <div class="stat-title">오늘 예약</div>
+            <div class="stat-number green" id="todayCount">0</div>
+        </div>
+
+        <div class="stat">
+            <div class="stat-title">오늘 작업완료</div>
+            <div class="stat-number blue" id="todayComplete">0</div>
+        </div>
+
+        <div class="stat">
+            <div class="stat-title">이번달 예약</div>
+            <div class="stat-number" id="monthCount">0</div>
+        </div>
+
+        <div class="stat alert">
+            <div class="stat-title">취소 승인 대기</div>
+            <div class="stat-number orange" id="cancelRequestCount">0</div>
+        </div>
+
+    </div>
+
+
+    <!-- CALENDAR -->
+
+    <div class="calendar-box">
+
+        <div class="calendar-top">
+
+            <button class="calendar-btn" onclick="previousMonth()">◀</button>
+
+            <div class="calendar-title">
+                <h2 id="monthTitle"></h2>
+                <button class="calendar-btn" onclick="goToday()">오늘</button>
+            </div>
+
+            <button class="calendar-btn" onclick="openAdd()">+ 예약 등록</button>
+            <button class="calendar-btn" onclick="nextMonth()">▶</button>
+
+        </div>
+
+        <div class="calendar">
+            <div class="week">일</div>
+            <div class="week">월</div>
+            <div class="week">화</div>
+            <div class="week">수</div>
+            <div class="week">목</div>
+            <div class="week">금</div>
+            <div class="week">토</div>
+
+            <div id="calendarDays" style="display:contents;"></div>
+        </div>
+
+        <div class="legend" id="legend"></div>
+
+    </div>
+
+</div>
+
+
+<!-- RESERVATION FORM MODAL (등록/수정) -->
+
+<div class="modal-bg" id="reservationModal">
+<div class="modal">
+
+    <div class="modal-header">
+        <h2 id="modalTitle">예약 등록</h2>
+        <button class="close" onclick="closeModal()">×</button>
+    </div>
+
+    <form id="reservationForm" onsubmit="saveReservation(event)">
+
+        <input type="hidden" id="editId">
+
+        <div class="form-grid">
+
+            <div class="form-group">
+                <label>예약 날짜</label>
+                <input type="date" id="date" required onchange="refreshAdminTimeOptions()">
+            </div>
+
+            <div class="form-group">
+                <label>예약 시간</label>
+                <select id="time" required></select>
+            </div>
+
+            <div class="form-group">
+                <label>고객명</label>
+                <input type="text" id="name" placeholder="홍길동" required>
+            </div>
+
+            <div class="form-group">
+                <label>연락처</label>
+                <input type="tel" id="phone" placeholder="010-0000-0000">
+            </div>
+
+            <div class="form-group">
+                <label>에어컨 종류</label>
+                <select id="type">
+                    <option>벽걸이</option>
+                    <option>스탠드</option>
+                    <option>벽걸이 + 스탠드</option>
+                    <option>시스템</option>
+                    <option>업소용</option>
+                    <option>기타</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>대수</label>
+                <input type="number" id="count" value="1" min="1">
+            </div>
+
+            <div class="form-group full">
+                <label>작업 주소</label>
+                <input type="text" id="address" placeholder="작업할 주소">
+            </div>
+
+            <div class="form-group full">
+                <label>고객 문의 / 요청사항</label>
+                <textarea id="memo" placeholder="고객 요청사항 / 문의내용 / 주차 / 현장 특이사항"></textarea>
+            </div>
+
+            <div class="form-group full">
+                <label>관리자 메모 (고객에게 보이지 않음)</label>
+                <textarea id="adminMemo" placeholder="견적, 특이사항 등 내부 메모"></textarea>
+            </div>
+
+        </div>
+
+        <div class="buttons">
+            <button type="submit" class="btn btn-primary">저장하기</button>
+            <button type="button" class="btn btn-light" onclick="closeModal()">닫기</button>
+        </div>
+
+    </form>
+
+</div>
+</div>
+
+
+<!-- DAY DETAIL MODAL -->
+
+<div class="modal-bg" id="dayModal">
+<div class="modal">
+
+    <div class="modal-header">
+        <h2 id="dayTitle"></h2>
+        <button class="close" onclick="closeDayModal()">×</button>
+    </div>
+
+    <button class="btn btn-primary" style="margin-bottom:15px;" onclick="openAddFromDay()">
+        + 이 날짜에 예약 추가
+    </button>
+
+    <div class="day-list" id="dayList"></div>
+
+</div>
+</div>
+
+
+<script>
+
+/* 고객 홈페이지(index.html)와 동일한 localStorage 키 / 데이터 구조를 사용합니다.
+   date, time, name, phone, type, count, address, memo, status, adminMemo, price, history */
+
+const RESERVATION_KEY = "pangicareReservations";
+
+const TIME_SLOTS = ["09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00"];
+
+const STATUS_LABEL = {
+    pending: "예약대기",
+    confirmed: "예약확정",
+    work: "작업중",
+    completed: "작업완료",
+    cancel_requested: "취소요청",
+    cancelled: "취소완료"
+};
+
+const STATUS_COLOR = {
+    pending: "#f2ad35",
+    confirmed: "#087f8c",
+    work: "#1b9c68",
+    completed: "#1677d2",
+    cancel_requested: "#e07b39",
+    cancelled: "#999999"
+};
+
+let reservations = JSON.parse(localStorage.getItem(RESERVATION_KEY)) || [];
+
+let currentDate = new Date();
+let selectedDate = null;
+
+/* =========================
+   UTIL
+========================= */
+
+function formatDate(date){
+    const y = date.getFullYear();
+    const m = String(date.getMonth()+1).padStart(2,"0");
+    const d = String(date.getDate()).padStart(2,"0");
+    return `${y}-${m}-${d}`;
+}
+
+document.getElementById("todayText").innerText =
+    "오늘 : " + new Date().toLocaleDateString("ko-KR");
+
+document.getElementById("legend").innerHTML =
+    Object.keys(STATUS_LABEL).map(key =>
+        `<div class="legend-item">
+            <span class="legend-color" style="background:${STATUS_COLOR[key]}"></span>
+            ${STATUS_LABEL[key]}
+        </div>`
+    ).join("");
+
+function saveData(){
+    localStorage.setItem(RESERVATION_KEY, JSON.stringify(reservations));
+}
+
+function addHistory(r, action){
+    r.history = r.history || [];
+    r.history.push({ action, at: new Date().toISOString() });
+}
+
+/* =========================
+   CALENDAR
+========================= */
+
+function renderCalendar(){
+
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+
+    document.getElementById("monthTitle").innerText = `${year}년 ${month+1}월`;
+
+    const container = document.getElementById("calendarDays");
+    container.innerHTML = "";
+
+    const firstDay = new Date(year,month,1).getDay();
+    const lastDate = new Date(year,month+1,0).getDate();
+    const previousLast = new Date(year,month,0).getDate();
+
+    for(let i=firstDay-1; i>=0; i--){
+        const day = document.createElement("div");
+        day.className = "day other-month";
+        day.innerHTML = `<div class="day-number">${previousLast-i}</div>`;
+        container.appendChild(day);
+    }
+
+    for(let d=1; d<=lastDate; d++){
+
+        const date = new Date(year,month,d);
+        const dateString = formatDate(date);
+
+        const day = document.createElement("div");
+        day.className = "day";
+
+        if(dateString === formatDate(new Date())){
+            day.classList.add("today");
+        }
+
+        const list = reservations
+            .filter(r => r.date === dateString)
+            .sort((a,b) => a.time.localeCompare(b.time));
+
+        if(list.some(r => r.status === "cancel_requested")){
+            day.classList.add("has-request");
+        }
+
+        day.onclick = function(){ openDay(dateString); };
+
+        let html = `<div class="day-number">${d}</div>`;
+
+        const maxShow = 5;
+
+        list.slice(0,maxShow).forEach(r => {
+            html += `
+            <div
+                class="reservation ${r.status === 'cancelled' ? 'cancelled' : ''}"
+                style="background:${STATUS_COLOR[r.status]}"
+                onclick="event.stopPropagation();openReservationDetail('${r.id}')"
+            >
+                ${r.time} ${r.name}
+            </div>
+            `;
+        });
+
+        if(list.length > maxShow){
+            html += `<div class="more">+ ${list.length-maxShow}건 더보기</div>`;
+        }
+
+        day.innerHTML = html;
+        container.appendChild(day);
+    }
+
+    updateDashboard();
+}
+
+function previousMonth(){ currentDate.setMonth(currentDate.getMonth()-1); renderCalendar(); }
+function nextMonth(){ currentDate.setMonth(currentDate.getMonth()+1); renderCalendar(); }
+function goToday(){ currentDate = new Date(); renderCalendar(); }
+
+/* =========================
+   TIME OPTIONS (등록/수정 폼)
+========================= */
+
+function refreshAdminTimeOptions(){
+    const date = document.getElementById("date").value;
+    const select = document.getElementById("time");
+    const current = select.value;
+
+    const editId = document.getElementById("editId").value;
+
+    const booked = new Set(
+        reservations
+        .filter(r => r.date === date && r.status !== "cancelled" && r.id !== editId)
+        .map(r => r.time)
+    );
+
+    select.innerHTML = TIME_SLOTS.map(t =>
+        `<option value="${t}" ${booked.has(t) ? "disabled" : ""}>
+            ${t} ${booked.has(t) ? "(예약마감)" : ""}
+        </option>`
+    ).join("");
+
+    if(!booked.has(current) && TIME_SLOTS.includes(current)){
+        select.value = current;
+    }
+}
+
+/* =========================
+   ADD / EDIT RESERVATION
+========================= */
+
+function openAdd(date=null){
+
+    document.getElementById("reservationForm").reset();
+    document.getElementById("editId").value = "";
+    document.getElementById("modalTitle").innerText = "예약 등록";
+    document.getElementById("date").value = date || formatDate(new Date());
+    document.getElementById("count").value = 1;
+
+    refreshAdminTimeOptions();
+
+    document.getElementById("reservationModal").classList.add("show");
+}
+
+function closeModal(){
+    document.getElementById("reservationModal").classList.remove("show");
+}
+
+function saveReservation(e){
+    e.preventDefault();
+
+    const id = document.getElementById("editId").value;
+    const existing = id ? reservations.find(r => r.id === id) : null;
+
+    const data = {
+        id: id || (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString()),
+        createdAt: existing ? existing.createdAt : new Date().toISOString(),
+        date: document.getElementById("date").value,
+        time: document.getElementById("time").value,
+        name: document.getElementById("name").value,
+        phone: document.getElementById("phone").value,
+        type: document.getElementById("type").value,
+        count: document.getElementById("count").value,
+        address: document.getElementById("address").value,
+        memo: document.getElementById("memo").value,
+        adminMemo: document.getElementById("adminMemo").value,
+        price: existing ? existing.price : "",
+        status: existing ? existing.status : "confirmed",
+        history: existing ? existing.history : []
+    };
+
+    addHistory(data, existing ? "관리자 수정" : "관리자 직접 등록");
+
+    if(existing){
+        const index = reservations.findIndex(r => r.id === id);
+        reservations[index] = data;
+    }else{
+        reservations.push(data);
+    }
+
+    saveData();
+    closeModal();
+    renderCalendar();
+    if(selectedDate) renderDayList();
+}
+
+function openReservationDetail(id){
+    closeDayModal();
+    openDay(reservations.find(r => r.id === id)?.date);
+}
+
+function editReservation(id){
+
+    const r = reservations.find(x => x.id === id);
+    if(!r) return;
+
+    document.getElementById("editId").value = r.id;
+    document.getElementById("date").value = r.date;
+    document.getElementById("name").value = r.name;
+    document.getElementById("phone").value = r.phone;
+    document.getElementById("type").value = r.type;
+    document.getElementById("count").value = r.count;
+    document.getElementById("address").value = r.address;
+    document.getElementById("memo").value = r.memo;
+    document.getElementById("adminMemo").value = r.adminMemo || "";
+
+    refreshAdminTimeOptions();
+    document.getElementById("time").value = r.time;
+
+    document.getElementById("modalTitle").innerText = "예약 수정";
+
+    closeDayModal();
+    document.getElementById("reservationModal").classList.add("show");
+}
+
+/* =========================
+   DAY VIEW
+========================= */
+
+function openDay(date){
+    if(!date) return;
+
+    selectedDate = date;
+    document.getElementById("dayTitle").innerText = date + " 예약현황";
+
+    renderDayList();
+    document.getElementById("dayModal").classList.add("show");
+}
+
+function renderDayList(){
+
+    const list = reservations
+        .filter(r => r.date === selectedDate)
+        .sort((a,b) => a.time.localeCompare(b.time));
+
+    const container = document.getElementById("dayList");
+    container.innerHTML = "";
+
+    if(list.length === 0){
+        container.innerHTML = `
+        <div style="text-align:center;padding:35px;color:#899399;">
+            예약이 없습니다.
+        </div>`;
+        return;
+    }
+
+    list.forEach(r => {
+        container.innerHTML += renderReservationCard(r);
+    });
+}
+
+function renderReservationCard(r){
+
+    const s = r.status;
+    const color = STATUS_COLOR[s];
+
+    let actions = "";
+
+    if(s === "pending"){
+        actions = `
+            <button class="small-btn" style="background:${STATUS_COLOR.confirmed}" onclick="changeStatus('${r.id}','confirmed')">예약 승인</button>
+            <button class="small-btn" style="background:${STATUS_COLOR.work}" onclick="changeStatus('${r.id}','work')">작업중</button>
+            <button class="small-btn" style="background:${STATUS_COLOR.completed}" onclick="changeStatus('${r.id}','completed')">작업완료</button>
+            <button class="small-btn" style="background:#e34b4b" onclick="changeStatus('${r.id}','cancelled','관리자 취소')">취소 처리</button>
+        `;
+    }else if(s === "confirmed"){
+        actions = `
+            <button class="small-btn" style="background:${STATUS_COLOR.work}" onclick="changeStatus('${r.id}','work')">작업중</button>
+            <button class="small-btn" style="background:${STATUS_COLOR.completed}" onclick="changeStatus('${r.id}','completed')">작업완료</button>
+            <button class="small-btn" style="background:#e34b4b" onclick="changeStatus('${r.id}','cancelled','관리자 취소')">취소 처리</button>
+        `;
+    }else if(s === "work"){
+        actions = `
+            <button class="small-btn" style="background:${STATUS_COLOR.completed}" onclick="changeStatus('${r.id}','completed')">작업완료</button>
+            <button class="small-btn" style="background:#e34b4b" onclick="changeStatus('${r.id}','cancelled','관리자 취소')">취소 처리</button>
+        `;
+    }else if(s === "cancel_requested"){
+        actions = `
+            <button class="small-btn" style="background:#e34b4b" onclick="changeStatus('${r.id}','cancelled','고객 취소 승인')">취소 승인</button>
+            <button class="small-btn" style="background:${STATUS_COLOR.confirmed}" onclick="changeStatus('${r.id}','confirmed','취소 거절 · 예약 유지')">취소 거절(예약유지)</button>
+        `;
+    }
+
+    actions += `
+        <button class="small-btn light" onclick="editReservation('${r.id}')">수정</button>
+        <button class="small-btn delete" onclick="deleteReservation('${r.id}')">삭제</button>
+    `;
+
+    return `
+    <div class="day-reservation ${s === 'cancelled' ? 'cancelled' : ''}" style="border-left-color:${color}">
+
+        <div class="res-head">
+            <div class="res-time">${r.time}</div>
+            <div class="status" style="background:${color}">${STATUS_LABEL[s]}</div>
+        </div>
+
+        <div class="res-info">
+            <strong>${r.name}</strong>
+            · <a href="tel:${r.phone}">${r.phone}</a>
+            <br>
+            ${r.type} ${r.count}대
+            <br>
+            ${r.address || "주소 미입력"}
+        </div>
+
+        ${r.memo ? `
+        <div class="res-memo">
+            <div class="res-memo-label">고객 문의 / 요청사항</div>
+            ${r.memo}
+        </div>` : ""}
+
+        ${r.adminMemo ? `
+        <div class="res-memo" style="background:#eef6f7;">
+            <div class="res-memo-label">관리자 메모</div>
+            ${r.adminMemo}
+        </div>` : ""}
+
+        <div class="res-actions">${actions}</div>
+
+    </div>
+    `;
+}
+
+function closeDayModal(){
+    document.getElementById("dayModal").classList.remove("show");
+}
+
+function openAddFromDay(){
+    const date = selectedDate;
+    closeDayModal();
+    openAdd(date);
+}
+
+/* =========================
+   STATUS
+========================= */
+
+function changeStatus(id, status, historyLabel){
+
+    const r = reservations.find(x => x.id === id);
+    if(!r) return;
+
+    r.status = status;
+    addHistory(r, historyLabel || `상태 변경 → ${STATUS_LABEL[status]}`);
+
+    saveData();
+    renderCalendar();
+    if(selectedDate) renderDayList();
+}
+
+function deleteReservation(id){
+    if(!confirm("이 예약을 완전히 삭제하시겠습니까?\n삭제는 되돌릴 수 없습니다.")) return;
+
+    reservations = reservations.filter(r => r.id !== id);
+
+    saveData();
+    renderCalendar();
+    if(selectedDate) renderDayList();
+}
+
+/* =========================
+   DASHBOARD
+========================= */
+
+function updateDashboard(){
+
+    const today = formatDate(new Date());
+    const todayList = reservations.filter(r => r.date === today && r.status !== "cancelled");
+
+    document.getElementById("todayCount").innerText = todayList.length;
+    document.getElementById("todayComplete").innerText =
+        todayList.filter(r => r.status === "completed").length;
+
+    const year = currentDate.getFullYear();
+    const month = String(currentDate.getMonth()+1).padStart(2,"0");
+
+    document.getElementById("monthCount").innerText =
+        reservations.filter(r => r.date.startsWith(`${year}-${month}`) && r.status !== "cancelled").length;
+
+    document.getElementById("cancelRequestCount").innerText =
+        reservations.filter(r => r.status === "cancel_requested").length;
+}
+
+/* =========================
+   INIT
+========================= */
+
+renderCalendar();
+
+</script>
+
+</body>
+</html>

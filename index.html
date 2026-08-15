@@ -85,14 +85,6 @@ header{
     color:#087f8c;
 }
 
-.header-btn{
-    background:#087f8c;
-    color:white;
-    padding:11px 19px;
-    border-radius:30px;
-    font-weight:700;
-}
-
 /* =========================
    HERO
 ========================= */
@@ -638,6 +630,64 @@ section{
 }
 
 /* =========================
+   LOOKUP RESULT
+========================= */
+
+.lookup-item{
+    border:1px solid #e7edef;
+    border-radius:14px;
+    padding:20px;
+    margin-top:16px;
+}
+
+.lookup-item-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:8px;
+    flex-wrap:wrap;
+    gap:8px;
+}
+
+.lookup-badge{
+    display:inline-block;
+    padding:4px 10px;
+    border-radius:20px;
+    font-size:12px;
+    font-weight:800;
+    color:white;
+}
+
+.lookup-info{
+    font-size:14px;
+    color:#5d6870;
+    line-height:1.9;
+}
+
+.lookup-empty{
+    margin-top:16px;
+    color:#8a9498;
+    font-size:14px;
+}
+
+.cancel-request-btn{
+    margin-top:14px;
+    border:none;
+    cursor:pointer;
+    padding:10px 16px;
+    background:#e34b4b;
+    color:white;
+    border-radius:8px;
+    font-weight:800;
+    font-size:13px;
+}
+
+.cancel-request-btn:disabled{
+    background:#c8ced0;
+    cursor:not-allowed;
+}
+
+/* =========================
    FOOTER
 ========================= */
 
@@ -816,12 +866,8 @@ footer{
             <a href="#process">청소과정</a>
             <a href="#review">고객후기</a>
             <a href="#contact">예약문의</a>
+            <a href="#myReservation">예약확인·취소</a>
         </nav>
-
-        <!-- 실제 전화번호로 변경 -->
-        <a href="tel:01000000000" class="header-btn">
-            상담하기
-        </a>
 
     </div>
 </header>
@@ -1577,21 +1623,13 @@ footer{
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label>희망 방문일</label>
-                        <input id="preferredDate" type="date">
+                        <label>희망 방문일 *</label>
+                        <input id="preferredDate" type="date" required onchange="refreshTimeSlots()">
                     </div>
                     <div class="form-group">
-                        <label>희망 방문시간</label>
-                        <select id="preferredTime">
-                            <option value="상관없음">상관없음</option>
-                            <option value="09:00">09:00</option>
-                            <option value="10:00">10:00</option>
-                            <option value="11:00">11:00</option>
-                            <option value="12:00">12:00</option>
-                            <option value="13:00">13:00</option>
-                            <option value="14:00">14:00</option>
-                            <option value="15:00">15:00</option>
-                            <option value="16:00">16:00</option>
+                        <label>희망 방문시간 *</label>
+                        <select id="preferredTime" required>
+                            <option value="">날짜를 먼저 선택해주세요</option>
                         </select>
                     </div>
                 </div>
@@ -1603,8 +1641,8 @@ footer{
                 </div>
 
                 <div class="form-group">
-                    <label>고객 요청사항</label>
-                    <textarea id="customerMemo" placeholder="주차 여부, 설치 장소, 에어컨 상태 등 전달할 내용을 적어주세요."></textarea>
+                    <label>문의사항 / 요청사항</label>
+                    <textarea id="customerMemo" placeholder="주차 여부, 설치 장소, 에어컨 상태, 궁금하신 점 등을 적어주시면 예약과 함께 관리자에게 전달됩니다."></textarea>
                 </div>
 
 
@@ -1612,10 +1650,60 @@ footer{
                     type="submit"
                     class="submit"
                 >
-                    상담 신청하기
+                    예약 신청하기
                 </button>
 
             </form>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- MY RESERVATION / CANCEL REQUEST -->
+
+<section id="myReservation" class="contact">
+
+    <div class="container">
+
+        <div class="section-title">
+
+            <div class="small">
+                MY RESERVATION
+            </div>
+
+            <h2>
+                예약 확인 · 취소 요청
+            </h2>
+
+            <p>
+                예약 시 입력한 연락처로 나의 예약 내역을 확인하고 취소를 요청할 수 있습니다.<br>
+                취소는 관리자 승인 후 최종 처리됩니다.
+            </p>
+
+        </div>
+
+
+        <div class="contact-box">
+
+            <div class="form-row">
+
+                <div class="form-group">
+                    <label>연락처</label>
+                    <input id="lookupPhone" type="tel" placeholder="010-0000-0000">
+                </div>
+
+                <div class="form-group" style="display:flex;align-items:flex-end;">
+                    <button type="button" class="submit" onclick="lookupReservations()">
+                        예약 조회
+                    </button>
+                </div>
+
+            </div>
+
+            <div id="lookupResult"></div>
 
         </div>
 
@@ -1673,7 +1761,7 @@ footer{
 <!-- FLOATING CALL -->
 
 <a
-    href="tel:01000000000"
+    href="tel:01056411192"
     class="floating-call"
     title="전화 상담"
 >
@@ -1683,11 +1771,90 @@ footer{
 
 <script>
 
+/* 관리자 달력(admin.html)과 동일한 localStorage 키 / 데이터 구조를 사용합니다. */
+
+const RESERVATION_KEY = "pangicareReservations";
+
+const TIME_SLOTS = ["09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00"];
+
+const STATUS_LABEL = {
+    pending: "예약대기",
+    confirmed: "예약확정",
+    work: "작업중",
+    completed: "작업완료",
+    cancel_requested: "취소요청",
+    cancelled: "취소완료"
+};
+
+const STATUS_COLOR = {
+    pending: "#f2ad35",
+    confirmed: "#087f8c",
+    work: "#1b9c68",
+    completed: "#1677d2",
+    cancel_requested: "#e07b39",
+    cancelled: "#999999"
+};
+
+function getReservations(){
+    return JSON.parse(localStorage.getItem(RESERVATION_KEY) || "[]");
+}
+
+function saveReservations(list){
+    localStorage.setItem(RESERVATION_KEY, JSON.stringify(list));
+}
+
+/* 선택한 날짜에 이미 예약된(취소 제외) 시간은 선택할 수 없게 막습니다. */
+
+function refreshTimeSlots(){
+    const date = document.getElementById("preferredDate").value;
+    const select = document.getElementById("preferredTime");
+    const current = select.value;
+
+    if(!date){
+        select.innerHTML = '<option value="">날짜를 먼저 선택해주세요</option>';
+        return;
+    }
+
+    const booked = new Set(
+        getReservations()
+        .filter(r => r.date === date && r.status !== "cancelled")
+        .map(r => r.time)
+    );
+
+    select.innerHTML = '<option value="">시간을 선택해주세요</option>' +
+        TIME_SLOTS.map(t =>
+            `<option value="${t}" ${booked.has(t) ? "disabled" : ""}>
+                ${t} ${booked.has(t) ? "(예약마감)" : ""}
+            </option>`
+        ).join("");
+
+    if(!booked.has(current) && TIME_SLOTS.includes(current)){
+        select.value = current;
+    }
+}
+
 function submitForm(event){
     event.preventDefault();
 
-    const KEY = "pangicareReservations";
-    const reservations = JSON.parse(localStorage.getItem(KEY) || "[]");
+    const date = document.getElementById("preferredDate").value;
+    const time = document.getElementById("preferredTime").value;
+
+    if(!date || !time){
+        alert("희망 방문일과 방문시간을 선택해주세요.");
+        return;
+    }
+
+    const reservations = getReservations();
+
+    const alreadyBooked = reservations.some(
+        r => r.date === date && r.time === time && r.status !== "cancelled"
+    );
+
+    if(alreadyBooked){
+        alert("죄송합니다. 선택하신 시간은 방금 다른 고객이 예약했습니다.\n다른 시간을 선택해주세요.");
+        refreshTimeSlots();
+        return;
+    }
 
     reservations.push({
         id: (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString()),
@@ -1695,28 +1862,94 @@ function submitForm(event){
         name: document.getElementById("name").value.trim(),
         phone: document.getElementById("phone").value.trim(),
         address: document.getElementById("address").value.trim(),
-        service: document.getElementById("service").value,
-        quantity: Number(document.getElementById("quantity").value || 1),
-        preferredDate: document.getElementById("preferredDate").value,
-        preferredTime: document.getElementById("preferredTime").value,
-        customerMemo: document.getElementById("customerMemo").value.trim(),
+        type: document.getElementById("service").value,
+        count: Number(document.getElementById("quantity").value || 1),
+        date: date,
+        time: time,
+        memo: document.getElementById("customerMemo").value.trim(),
         adminMemo: "",
         price: "",
         status: "pending",
-        scheduledDate: "",
-        scheduledTime: "",
-        completed: false,
-        cancelledAt: "",
         history: [{ action: "예약 신청", at: new Date().toISOString() }]
     });
 
-    localStorage.setItem(KEY, JSON.stringify(reservations));
+    saveReservations(reservations);
 
-    alert("예약 상담 신청이 접수되었습니다.\n\n관리자가 상담 후 실제 날짜와 시간을 확정합니다.");
+    alert("예약 신청이 접수되었습니다.\n\n관리자 확인 후 예약이 확정됩니다.");
     event.target.reset();
     document.getElementById("quantity").value = 1;
-    document.getElementById("preferredTime").value = "상관없음";
+    refreshTimeSlots();
 }
+
+/* 연락처로 나의 예약을 조회하고, 취소를 "요청"합니다. 실제 취소는 관리자 승인 후 처리됩니다. */
+
+function lookupReservations(){
+    const phone = document.getElementById("lookupPhone").value.trim();
+    const result = document.getElementById("lookupResult");
+
+    if(!phone){
+        alert("연락처를 입력해주세요.");
+        return;
+    }
+
+    const mine = getReservations()
+        .filter(r => r.phone.replace(/-/g,"") === phone.replace(/-/g,""))
+        .sort((a,b) => (b.date+b.time).localeCompare(a.date+a.time));
+
+    if(mine.length === 0){
+        result.innerHTML = '<div class="lookup-empty">해당 연락처로 등록된 예약이 없습니다.</div>';
+        return;
+    }
+
+    result.innerHTML = mine.map(r => {
+        const cancellable = ["pending","confirmed"].includes(r.status);
+
+        return `
+        <div class="lookup-item">
+
+            <div class="lookup-item-head">
+                <strong>${r.date} ${r.time}</strong>
+                <span class="lookup-badge" style="background:${STATUS_COLOR[r.status]}">
+                    ${STATUS_LABEL[r.status]}
+                </span>
+            </div>
+
+            <div class="lookup-info">
+                ${r.type} ${r.count}대<br>
+                ${r.address}
+                ${r.memo ? `<br>문의사항 : ${r.memo}` : ""}
+            </div>
+
+            <button
+                class="cancel-request-btn"
+                ${cancellable ? "" : "disabled"}
+                onclick="requestCancel('${r.id}')"
+            >
+                ${cancellable ? "취소 요청" : "취소 요청 불가"}
+            </button>
+
+        </div>
+        `;
+    }).join("");
+}
+
+function requestCancel(id){
+    if(!confirm("예약 취소를 요청하시겠습니까?\n관리자 확인 후 최종 취소 처리됩니다.")) return;
+
+    const reservations = getReservations();
+    const target = reservations.find(r => r.id === id);
+    if(!target) return;
+
+    target.status = "cancel_requested";
+    target.history.push({ action: "고객 취소 요청", at: new Date().toISOString() });
+
+    saveReservations(reservations);
+
+    alert("취소 요청이 접수되었습니다. 관리자 승인 후 최종 취소됩니다.");
+    lookupReservations();
+}
+
+refreshTimeSlots();
 
 </script>
 
