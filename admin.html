@@ -1238,14 +1238,23 @@ textarea:focus{
                         <label>핵심 내용</label>
                         <textarea id="newsContent" placeholder="이웃들에게 전하고 싶은 내용을 편하게 적어주세요. 예: 8/21 예약 여유 있어요, 여름 전 에어컨 청소 미리 하시라고 안내하고 싶어요 등"></textarea>
                     </div>
+
+                    <div class="full">
+                        <label>사진 첨부</label>
+                        <label class="photo-picker" for="newsPhotoInput">
+                            <span>📷 클릭해서 사진을 선택하세요 (여러 장 가능)</span>
+                            <input type="file" id="newsPhotoInput" accept="image/*" multiple onchange="handleNewsPhotos(event)">
+                        </label>
+                        <div class="photo-grid" id="newsPhotoGrid"></div>
+                    </div>
                 </div>
 
                 <div class="ai-toolbar">
-                    <button class="btn btn-primary" onclick="generateNews()">🥕 당근 소식 초안 만들기</button>
+                    <button class="btn btn-primary" onclick="generateNews()">🥕 AI 당근 소식 초안 만들기</button>
                 </div>
 
                 <div id="newsResult" class="ai-result"></div>
-                <div class="ai-note">※ 당근 비즈니스 프로필 → 소식 등록 화면에 그대로 붙여넣어 사용하시면 됩니다. 게시 전 내용을 확인해주세요.</div>
+                <div class="ai-note">※ 당근 비즈니스 프로필 → 소식 등록 화면에 그대로 붙여넣어 사용하시면 됩니다. 첨부한 사진은 이 브라우저 화면에서만 미리보기로 보이며 어디에도 업로드되지 않으니, 실제 등록할 때 당근 앱/사이트에서 직접 첨부해주세요. 게시 전 내용을 확인해주세요.</div>
             </div>
         </section>
 
@@ -2194,10 +2203,45 @@ ${d} 방문 일정에 여유가 있습니다.
     logActivity("AI 홍보 문구 생성");
 }
 
+/* 당근 소식 사진 첨부 — 블로그와 마찬가지로 서버 업로드 없이 브라우저 미리보기만 제공합니다. */
+
+let newsPhotos = [];
+
+function handleNewsPhotos(event){
+    const files = Array.from(event.target.files || []);
+
+    files.forEach(file => {
+        newsPhotos.push({ url: URL.createObjectURL(file), name: file.name });
+    });
+
+    event.target.value = "";
+    renderNewsPhotos();
+}
+
+function removeNewsPhoto(index){
+    URL.revokeObjectURL(newsPhotos[index].url);
+    newsPhotos.splice(index, 1);
+    renderNewsPhotos();
+}
+
+function renderNewsPhotos(){
+    const grid = document.getElementById("newsPhotoGrid");
+    grid.innerHTML = newsPhotos.map((p, i) => `
+        <div class="photo-thumb">
+            <img src="${p.url}" alt="${p.name}">
+            <button type="button" onclick="removeNewsPhoto(${i})" title="삭제">×</button>
+        </div>
+    `).join("");
+}
+
 function generateNews(){
     const r = document.getElementById("newsRegion").value || "우리 동네";
     const topic = document.getElementById("newsTopic").value;
     const content = document.getElementById("newsContent").value || "";
+
+    const photoLine = newsPhotos.length
+        ? `\n📷 첨부 사진 ${newsPhotos.length}장 선택됨 — 당근에 등록할 때 함께 올려주세요.\n`
+        : "";
 
     const out =
 `안녕하세요, ${r} 이웃분들 😊
@@ -2206,7 +2250,7 @@ function generateNews(){
 [${topic}]
 
 ${content || "(핵심 내용을 입력하면 이 자리에 반영됩니다.)"}
-
+${photoLine}
 궁금하신 점 있으시면 편하게 채팅 남겨주세요!
 이웃분들 항상 응원합니다 🥕
 
@@ -2216,7 +2260,7 @@ ${content || "(핵심 내용을 입력하면 이 자리에 반영됩니다.)"}
     el.style.display = "block";
     el.textContent = out;
 
-    logActivity("당근 소식 초안 생성");
+    logActivity("당근 소식 초안 생성" + (newsPhotos.length ? ` (사진 ${newsPhotos.length}장)` : ""));
 }
 
 function generateReview(){
