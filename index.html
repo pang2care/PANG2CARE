@@ -452,6 +452,8 @@ section{
     transition:.3s ease;
     position:relative;
     overflow:hidden;
+    display:flex;
+    flex-direction:column;
 }
 
 .service-card:before{
@@ -497,7 +499,8 @@ section{
 
 .service-tag{
     display:inline-block;
-    margin-top:20px;
+    align-self:flex-start;
+    margin-top:auto;
     padding:6px 10px;
     background:var(--mint-100);
     color:var(--teal-700);
