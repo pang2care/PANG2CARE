@@ -57,6 +57,64 @@ body{
 }
 
 /* =========================
+   APP LAYOUT (사이드바 + 본문)
+========================= */
+
+.app{
+    display:flex;
+    align-items:flex-start;
+}
+
+.sidebar{
+    width:220px;
+    flex:0 0 220px;
+    background:#0a3238;
+    color:#fff;
+    padding:20px 14px;
+    position:sticky;
+    top:70px;
+    height:calc(100vh - 70px);
+    overflow-y:auto;
+}
+
+.sidebar .menu-title{
+    font-size:11px;
+    color:#8fb0b3;
+    letter-spacing:.5px;
+    padding:16px 10px 6px;
+}
+
+.sidebar .menu-title:first-child{
+    padding-top:4px;
+}
+
+.sidebar .menu button{
+    display:block;
+    width:100%;
+    border:0;
+    background:transparent;
+    color:#cfe4e2;
+    text-align:left;
+    padding:11px 10px;
+    border-radius:9px;
+    margin:2px 0;
+    font-size:13px;
+    font-weight:700;
+    cursor:pointer;
+}
+
+.sidebar .menu button.active,
+.sidebar .menu button:hover{
+    background:#0f4a52;
+    color:#fff;
+}
+
+.main-shell{
+    flex:1 1 auto;
+    min-width:0;
+}
+
+/* =========================
    LAYOUT
 ========================= */
 
@@ -66,7 +124,19 @@ body{
 }
 
 /* =========================
-   DASHBOARD
+   VIEW 전환
+========================= */
+
+.view{
+    display:none;
+}
+
+.view.active{
+    display:block;
+}
+
+/* =========================
+   DASHBOARD (공용 카드/그리드)
 ========================= */
 
 .dashboard{
@@ -102,6 +172,200 @@ body{
 .stat-number.blue{ color:#1677d2; }
 .stat-number.green{ color:#087f8c; }
 .stat-number.orange{ color:#e07b39; }
+.stat-number.red{ color:#e34b4b; }
+
+.stat-note{
+    font-size:12px;
+    color:#8a9498;
+    margin-top:6px;
+}
+
+.progress{
+    height:7px;
+    background:#edf1f6;
+    border-radius:10px;
+    overflow:hidden;
+    margin-top:10px;
+}
+
+.progress i{
+    display:block;
+    height:100%;
+    background:#087f8c;
+    border-radius:10px;
+}
+
+/* =========================
+   패널 (공용 카드 컨테이너)
+========================= */
+
+.panel{
+    background:#fff;
+    border-radius:15px;
+    padding:20px;
+    box-shadow:0 3px 15px rgba(0,0,0,.05);
+    margin-bottom:18px;
+}
+
+.panel h2{
+    font-size:17px;
+    margin-bottom:6px;
+}
+
+.panel .panel-sub{
+    font-size:13px;
+    color:#748087;
+    margin-bottom:16px;
+}
+
+.ai-grid-2{
+    display:grid;
+    grid-template-columns:1.4fr .9fr;
+    gap:18px;
+}
+
+.action-grid{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:11px;
+}
+
+.action-btn{
+    border:1px solid #e0e7ea;
+    background:#fbfcfe;
+    border-radius:12px;
+    padding:15px;
+    text-align:left;
+    cursor:pointer;
+}
+
+.action-btn:hover{
+    border-color:#087f8c;
+    background:#f3fbfb;
+}
+
+.action-btn b{
+    display:block;
+    margin-bottom:5px;
+    font-size:13px;
+}
+
+.action-btn small{
+    color:#7a879a;
+    font-size:11px;
+}
+
+.issue-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:12px 0;
+    border-bottom:1px solid #edf0f4;
+    font-size:13px;
+}
+
+.issue-row:last-child{
+    border-bottom:0;
+}
+
+.badge{
+    padding:5px 8px;
+    border-radius:8px;
+    font-size:11px;
+    font-weight:700;
+    white-space:nowrap;
+}
+
+.badge.high{ background:#fff0f0; color:#d64747; }
+.badge.mid{ background:#fff7df; color:#b57b00; }
+.badge.ok{ background:#eaf8f0; color:#16834b; }
+
+.activity-table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:13px;
+}
+
+.activity-table th,
+.activity-table td{
+    padding:11px 8px;
+    border-bottom:1px solid #edf0f4;
+    text-align:left;
+}
+
+.activity-table th{
+    color:#7a879a;
+    font-size:12px;
+}
+
+/* =========================
+   AI 입력 폼
+========================= */
+
+.ai-form{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:13px;
+}
+
+.ai-form .full{
+    grid-column:1 / -1;
+}
+
+.ai-form label{
+    display:block;
+    font-size:12px;
+    font-weight:800;
+    margin-bottom:6px;
+}
+
+.ai-form input,
+.ai-form select,
+.ai-form textarea{
+    width:100%;
+    padding:11px;
+    border:1px solid #dce4e8;
+    border-radius:9px;
+    font-family:inherit;
+    font-size:13px;
+    outline:none;
+}
+
+.ai-form textarea{
+    min-height:110px;
+    resize:vertical;
+}
+
+.ai-form input:focus,
+.ai-form select:focus,
+.ai-form textarea:focus{
+    border-color:#087f8c;
+}
+
+.ai-toolbar{
+    display:flex;
+    justify-content:flex-end;
+    gap:8px;
+    margin-top:14px;
+}
+
+.ai-result{
+    margin-top:16px;
+    background:#f2fafa;
+    border:1px solid #d3ecec;
+    border-radius:12px;
+    padding:16px;
+    line-height:1.75;
+    white-space:pre-line;
+    font-size:13px;
+    display:none;
+}
+
+.ai-note{
+    font-size:11px;
+    color:#a2adb8;
+    margin-top:8px;
+}
 
 /* =========================
    CALENDAR
@@ -189,6 +453,21 @@ body{
 
 .day.has-request{
     box-shadow:inset 0 0 0 2px #e07b39;
+}
+
+.day.empty-promo{
+    box-shadow:inset 0 0 0 2px #ff6b4a;
+}
+
+.promo-tag{
+    display:inline-block;
+    margin-top:3px;
+    font-size:9px;
+    font-weight:800;
+    color:#ff6b4a;
+    background:#fff0eb;
+    padding:2px 5px;
+    border-radius:5px;
 }
 
 .day-number{
@@ -480,16 +759,33 @@ textarea:focus{
 
 @media(max-width:900px){
 
+    .sidebar{ width:170px; flex-basis:170px; }
     .dashboard{ grid-template-columns:1fr 1fr; }
+    .ai-grid-2{ grid-template-columns:1fr; }
+    .action-grid{ grid-template-columns:1fr; }
+    .ai-form{ grid-template-columns:1fr; }
     .day{ min-height:110px; }
     .reservation{ font-size:10px; }
 }
 
-@media(max-width:600px){
+@media(max-width:650px){
 
     .header{ padding:0 15px; }
     .logo{ font-size:19px; }
     .today{ display:none; }
+
+    .app{ flex-direction:column; }
+    .sidebar{
+        position:static;
+        width:100%;
+        flex-basis:auto;
+        height:auto;
+        padding:10px 12px;
+    }
+    .sidebar .menu{ display:flex; flex-wrap:wrap; gap:4px; }
+    .sidebar .menu button{ width:auto; }
+    .sidebar .menu-title{ width:100%; padding:8px 4px 2px; }
+
     .dashboard{ grid-template-columns:1fr 1fr; }
     .stat{ padding:14px; }
     .stat-number{ font-size:22px; }
@@ -609,67 +905,341 @@ textarea:focus{
 </div>
 
 
-<div class="container" id="adminApp" style="display:none;">
+<div class="app" id="adminApp" style="display:none;">
 
-    <!-- DASHBOARD -->
+    <!-- SIDEBAR -->
 
-    <div class="dashboard">
+    <aside class="sidebar">
 
-        <div class="stat">
-            <div class="stat-title">오늘 예약</div>
-            <div class="stat-number green" id="todayCount">0</div>
+        <div class="menu-title">예약 관리</div>
+        <div class="menu">
+            <button class="active" data-view="calendar">📅 예약 캘린더</button>
         </div>
 
-        <div class="stat">
-            <div class="stat-title">오늘 작업완료</div>
-            <div class="stat-number blue" id="todayComplete">0</div>
+        <div class="menu-title">AI 마케팅</div>
+        <div class="menu">
+            <button data-view="dashboard">📊 AI 대시보드</button>
+            <button data-view="blog">✍️ AI 블로그 작성</button>
+            <button data-view="content">📣 홍보 콘텐츠</button>
+            <button data-view="analysis">📈 예약 분석</button>
+            <button data-view="review">⭐ 리뷰 답변</button>
         </div>
 
-        <div class="stat">
-            <div class="stat-title">이번달 예약</div>
-            <div class="stat-number" id="monthCount">0</div>
+        <div class="menu-title">관리</div>
+        <div class="menu">
+            <button data-view="settings">⚙️ AI 설정</button>
         </div>
 
-        <div class="stat alert">
-            <div class="stat-title">취소 승인 대기</div>
-            <div class="stat-number orange" id="cancelRequestCount">0</div>
-        </div>
-
-    </div>
+    </aside>
 
 
-    <!-- CALENDAR -->
+    <!-- MAIN -->
 
-    <div class="calendar-box">
+    <div class="main-shell">
+    <div class="container">
 
-        <div class="calendar-top">
 
-            <button class="calendar-btn" onclick="previousMonth()">◀</button>
+        <!-- VIEW: 예약 캘린더 -->
 
-            <div class="calendar-title">
-                <h2 id="monthTitle"></h2>
-                <button class="calendar-btn" onclick="goToday()">오늘</button>
+        <section id="view-calendar" class="view active">
+
+            <div class="dashboard">
+
+                <div class="stat">
+                    <div class="stat-title">오늘 예약</div>
+                    <div class="stat-number green" id="todayCount">0</div>
+                </div>
+
+                <div class="stat">
+                    <div class="stat-title">오늘 작업완료</div>
+                    <div class="stat-number blue" id="todayComplete">0</div>
+                </div>
+
+                <div class="stat">
+                    <div class="stat-title">이번달 예약</div>
+                    <div class="stat-number" id="monthCount">0</div>
+                </div>
+
+                <div class="stat alert">
+                    <div class="stat-title">취소 승인 대기</div>
+                    <div class="stat-number orange" id="cancelRequestCount">0</div>
+                </div>
+
             </div>
 
-            <button class="calendar-btn" onclick="openAdd()">+ 예약 등록</button>
-            <button class="calendar-btn" onclick="nextMonth()">▶</button>
 
-        </div>
+            <div class="calendar-box">
 
-        <div class="calendar">
-            <div class="week">일</div>
-            <div class="week">월</div>
-            <div class="week">화</div>
-            <div class="week">수</div>
-            <div class="week">목</div>
-            <div class="week">금</div>
-            <div class="week">토</div>
+                <div class="calendar-top">
 
-            <div id="calendarDays" style="display:contents;"></div>
-        </div>
+                    <button class="calendar-btn" onclick="previousMonth()">◀</button>
 
-        <div class="legend" id="legend"></div>
+                    <div class="calendar-title">
+                        <h2 id="monthTitle"></h2>
+                        <button class="calendar-btn" onclick="goToday()">오늘</button>
+                    </div>
 
+                    <button class="calendar-btn" onclick="openAdd()">+ 예약 등록</button>
+                    <button class="calendar-btn" onclick="nextMonth()">▶</button>
+
+                </div>
+
+                <div class="calendar">
+                    <div class="week">일</div>
+                    <div class="week">월</div>
+                    <div class="week">화</div>
+                    <div class="week">수</div>
+                    <div class="week">목</div>
+                    <div class="week">금</div>
+                    <div class="week">토</div>
+
+                    <div id="calendarDays" style="display:contents;"></div>
+                </div>
+
+                <div class="legend" id="legend"></div>
+
+            </div>
+
+        </section>
+
+
+        <!-- VIEW: AI 대시보드 -->
+
+        <section id="view-dashboard" class="view">
+
+            <div class="dashboard">
+
+                <div class="stat">
+                    <div class="stat-title">이번 달 예약률</div>
+                    <div class="stat-number blue" id="aiRate">0%</div>
+                    <div class="progress"><i id="aiRateBar" style="width:0%"></i></div>
+                </div>
+
+                <div class="stat">
+                    <div class="stat-title">이번 달 예약</div>
+                    <div class="stat-number green" id="aiMonthCount">0</div>
+                    <div class="stat-note">취소 <span id="aiMonthCancel">0</span>건 포함 전체 접수 기준</div>
+                </div>
+
+                <div class="stat alert">
+                    <div class="stat-title">예약 가능 빈 날짜</div>
+                    <div class="stat-number orange" id="aiEmptyCount">0</div>
+                    <div class="stat-note">앞으로 45일 기준</div>
+                </div>
+
+                <div class="stat">
+                    <div class="stat-title">AI 콘텐츠 생성</div>
+                    <div class="stat-number" id="aiContentCount">0</div>
+                    <div class="stat-note">이 기기에 저장된 생성 이력</div>
+                </div>
+
+            </div>
+
+            <div class="ai-grid-2">
+
+                <div class="panel">
+                    <h2>🤖 AI가 추천하는 오늘의 마케팅</h2>
+                    <div class="action-grid">
+                        <button class="action-btn" onclick="openView('blog')"><b>📝 작업 후기 글 만들기</b><small>실제 작업 내용을 입력하면 블로그 초안을 만듭니다.</small></button>
+                        <button class="action-btn" onclick="openView('content')"><b>📣 빈 날짜 홍보 만들기</b><small>예약이 적은 날짜를 찾아 홍보 문구를 생성합니다.</small></button>
+                        <button class="action-btn" onclick="openView('analysis')"><b>📅 예약률 분석</b><small>달력 데이터를 기준으로 예약 공백을 분석합니다.</small></button>
+                        <button class="action-btn" onclick="openView('review')"><b>⭐ 리뷰 답변 만들기</b><small>고객 리뷰에 맞는 자연스러운 답변을 생성합니다.</small></button>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h2>🚨 예약이 비어있는 날짜</h2>
+                    <div id="aiIssueList"></div>
+                </div>
+
+            </div>
+
+            <div class="panel">
+                <h2>📈 최근 AI 콘텐츠 생성 이력</h2>
+                <div class="panel-sub">이 브라우저(기기)에만 저장됩니다. 다른 기기에서는 보이지 않아요.</div>
+                <table class="activity-table">
+                    <thead><tr><th>날짜</th><th>활동</th><th>상태</th></tr></thead>
+                    <tbody id="activityBody"></tbody>
+                </table>
+            </div>
+
+        </section>
+
+
+        <!-- VIEW: AI 블로그 작성 -->
+
+        <section id="view-blog" class="view">
+            <div class="panel">
+                <h2>✍️ AI 블로그 작성</h2>
+                <div class="panel-sub">AI가 자동 발행하지 않고, 실제 작업 내용을 바탕으로 초안을 만들어 줍니다.</div>
+
+                <div class="ai-form">
+                    <div><label>지역</label><input id="region" placeholder="예: 양산 물금"></div>
+                    <div><label>에어컨 종류</label>
+                        <select id="type">
+                            <option>벽걸이 에어컨</option>
+                            <option>스탠드 에어컨</option>
+                            <option>시스템 에어컨</option>
+                            <option>천장형 에어컨</option>
+                        </select>
+                    </div>
+                    <div><label>청소 상태</label><input id="condition" placeholder="예: 곰팡이와 냄새가 심한 상태"></div>
+                    <div><label>작업 방식</label><input id="method" placeholder="예: 완전분해 세척"></div>
+                    <div class="full">
+                        <label>실제 작업 후기 / 특이사항</label>
+                        <textarea id="story" placeholder="실제 있었던 작업 내용을 적어주세요."></textarea>
+                    </div>
+                </div>
+
+                <div class="ai-toolbar">
+                    <button class="btn btn-primary" onclick="generateBlog()">✨ AI 블로그 초안 만들기</button>
+                </div>
+
+                <div id="blogResult" class="ai-result"></div>
+                <div class="ai-note">※ 실제 있었던 내용만 입력해주세요. 초안은 게시 전 반드시 확인해주세요.</div>
+            </div>
+        </section>
+
+
+        <!-- VIEW: 홍보 콘텐츠 -->
+
+        <section id="view-content" class="view">
+            <div class="panel">
+                <h2>📣 AI 홍보 콘텐츠 생성</h2>
+                <div class="panel-sub">예약이 부족한 날짜에 맞춰 홍보 문구를 만듭니다. (아래 추천 날짜는 실제 예약 데이터 기준입니다)</div>
+
+                <div class="ai-form">
+                    <div><label>홍보 지역</label><input id="adRegion" placeholder="예: 양산"></div>
+                    <div><label>홍보 대상</label>
+                        <select id="adTarget">
+                            <option>벽걸이 에어컨 청소</option>
+                            <option>스탠드 에어컨 청소</option>
+                            <option>시스템 에어컨 청소</option>
+                        </select>
+                    </div>
+                    <div><label>예약 가능 날짜</label><input id="adDate" placeholder="예: 8월 21일"></div>
+                    <div><label>채널</label>
+                        <select id="channel">
+                            <option>네이버 블로그</option>
+                            <option>홈페이지 배너</option>
+                            <option>인스타그램</option>
+                            <option>문자/카카오톡</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="ai-toolbar">
+                    <button class="btn btn-primary" onclick="generateAd()">📣 홍보 문구 만들기</button>
+                </div>
+
+                <div id="adResult" class="ai-result"></div>
+                <div class="ai-note">※ 실제 예약 가능 여부와 가격을 확인한 뒤 게시해주세요.</div>
+            </div>
+        </section>
+
+
+        <!-- VIEW: 예약 분석 -->
+
+        <section id="view-analysis" class="view">
+
+            <div class="dashboard">
+                <div class="stat"><div class="stat-title">작업완료</div><div class="stat-number green" id="anCompleted">0</div></div>
+                <div class="stat"><div class="stat-title">예약대기</div><div class="stat-number" id="anPending">0</div></div>
+                <div class="stat"><div class="stat-title">취소</div><div class="stat-number red" id="anCancelled">0</div></div>
+                <div class="stat alert"><div class="stat-title">빈 날짜(30일 내)</div><div class="stat-number orange" id="anEmpty">0</div></div>
+            </div>
+
+            <div class="calendar-box">
+
+                <div class="calendar-top">
+                    <button class="calendar-btn" onclick="analysisPrevMonth()">◀</button>
+                    <div class="calendar-title">
+                        <h2 id="analysisMonthTitle"></h2>
+                        <button class="calendar-btn" onclick="analysisToday()">오늘</button>
+                    </div>
+                    <button class="calendar-btn" onclick="analysisNextMonth()">▶</button>
+                </div>
+
+                <div class="calendar">
+                    <div class="week">일</div>
+                    <div class="week">월</div>
+                    <div class="week">화</div>
+                    <div class="week">수</div>
+                    <div class="week">목</div>
+                    <div class="week">금</div>
+                    <div class="week">토</div>
+
+                    <div id="analysisCalendarDays" style="display:contents;"></div>
+                </div>
+
+                <div class="legend">
+                    <div class="legend-item"><span class="legend-color" style="background:#ff6b4a"></span>예약 없음(홍보 추천)</div>
+                </div>
+
+            </div>
+
+            <div class="panel" style="margin-top:18px;">
+                <h2>🤖 AI 분석</h2>
+                <div id="analysisResult" class="ai-result" style="display:block;"></div>
+            </div>
+
+        </section>
+
+
+        <!-- VIEW: 리뷰 답변 -->
+
+        <section id="view-review" class="view">
+            <div class="panel">
+                <h2>⭐ AI 리뷰 답변</h2>
+                <div class="panel-sub">고객 리뷰를 입력하면 자연스러운 답변 초안을 만들어 줍니다.</div>
+
+                <div class="ai-form">
+                    <div class="full">
+                        <label>고객 리뷰 원문</label>
+                        <textarea id="reviewText" placeholder="예: 기사님이 친절하시고 에어컨 냄새도 많이 없어졌어요. 다음에도 이용할게요."></textarea>
+                    </div>
+                </div>
+
+                <div class="ai-toolbar">
+                    <button class="btn btn-primary" onclick="generateReview()">✨ 답변 만들기</button>
+                </div>
+
+                <div id="reviewResult" class="ai-result"></div>
+            </div>
+        </section>
+
+
+        <!-- VIEW: AI 설정 -->
+
+        <section id="view-settings" class="view">
+            <div class="panel">
+                <h2>⚙️ AI 설정</h2>
+                <div class="panel-sub">여기서 입력한 값이 블로그/홍보 문구 작성 시 기본값으로 채워집니다. (이 브라우저에만 저장됨)</div>
+
+                <div class="ai-form">
+                    <div><label>업체명</label><input id="setName" value="팡이케어"></div>
+                    <div><label>주요 지역</label><input id="setRegion" placeholder="예: 양산 / 부산 / 김해"></div>
+                    <div><label>주요 서비스</label><input id="setService" value="에어컨 분해 세척"></div>
+                    <div>
+                        <label>콘텐츠 자동 발행</label>
+                        <select id="setAutoPublish">
+                            <option value="off">사용 안 함 — 추천</option>
+                            <option value="review">관리자 승인 후 발행</option>
+                        </select>
+                    </div>
+                    <div class="full">
+                        <label>AI 운영 원칙</label>
+                        <textarea id="setPolicy">실제 작업 경험과 제공된 정보만 사용한다. 허위 후기나 허위 할인 정보를 만들지 않는다. 콘텐츠는 관리자 확인 후 게시한다.</textarea>
+                    </div>
+                </div>
+
+                <div class="ai-toolbar">
+                    <button class="btn btn-primary" onclick="saveSettingsFromForm()">저장하기</button>
+                </div>
+            </div>
+        </section>
+
+    </div>
     </div>
 
 </div>
@@ -787,9 +1357,12 @@ textarea:focus{
    reservations-api.js 에 정의되어 있습니다. */
 
 const ADMIN_KEY_STORAGE = "pangicareAdminKey";
+const SETTINGS_STORAGE = "pangicareBizSettings";
+const ACTIVITY_STORAGE = "pangicareActivityLog";
 
 let reservations = [];
 let currentDate = new Date();
+let analysisDate = new Date();
 let selectedDate = null;
 let pollTimer = null;
 
@@ -802,6 +1375,14 @@ function formatDate(date){
     const m = String(date.getMonth()+1).padStart(2,"0");
     const d = String(date.getDate()).padStart(2,"0");
     return `${y}-${m}-${d}`;
+}
+
+function formatDateShort(date){
+    return `${date.getMonth()+1}/${String(date.getDate()).padStart(2,"0")}`;
+}
+
+function getWeekdayKR(date){
+    return ["일","월","화","수","목","금","토"][date.getDay()];
 }
 
 document.getElementById("todayText").innerText =
@@ -821,6 +1402,28 @@ function addHistory(r, action){
 }
 
 /* =========================
+   VIEW 전환 (사이드바)
+========================= */
+
+document.querySelectorAll(".sidebar .menu button").forEach(btn => {
+    btn.addEventListener("click", () => openView(btn.dataset.view));
+});
+
+function openView(id){
+    document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+    document.getElementById("view-" + id).classList.add("active");
+
+    document.querySelectorAll(".sidebar .menu button").forEach(b => {
+        b.classList.toggle("active", b.dataset.view === id);
+    });
+
+    if(id === "dashboard") renderAiDashboard();
+    if(id === "analysis") renderAnalysis();
+    if(id === "settings") fillSettingsForm();
+    if(id === "blog" || id === "content") prefillAiForms();
+}
+
+/* =========================
    LOGIN / DATA LOADING
 ========================= */
 
@@ -837,7 +1440,7 @@ function showLoginScreen(message){
 
 function showAdminApp(){
     document.getElementById("loginScreen").style.display = "none";
-    document.getElementById("adminApp").style.display = "block";
+    document.getElementById("adminApp").style.display = "flex";
 }
 
 function doLogin(){
@@ -878,6 +1481,10 @@ async function loadReservations(){
         reservations = await apiList();
         renderCalendar();
         if(selectedDate) renderDayList();
+
+        // AI 관련 화면이 열려있을 수 있으니 함께 최신화합니다.
+        if(document.getElementById("view-dashboard").classList.contains("active")) renderAiDashboard();
+        if(document.getElementById("view-analysis").classList.contains("active")) renderAnalysis();
     }catch(err){
         console.error(err);
     }
@@ -1227,7 +1834,7 @@ async function deleteReservation(id){
 }
 
 /* =========================
-   DASHBOARD
+   DASHBOARD (예약 캘린더 상단 통계)
 ========================= */
 
 function updateDashboard(){
@@ -1247,6 +1854,332 @@ function updateDashboard(){
 
     document.getElementById("cancelRequestCount").innerText =
         reservations.filter(r => r.status === "cancel_requested").length;
+}
+
+/* =========================
+   AI 대시보드 / 예약 분석 (실제 예약 데이터 기반)
+========================= */
+
+// 오늘부터 daysAhead일 이내에서 예약이 하나도 없는 날짜 목록을 돌려줍니다.
+function computeEmptyDates(daysAhead){
+    const today = new Date();
+    today.setHours(0,0,0,0);
+
+    const byDate = {};
+    reservations.forEach(r => {
+        if(r.status === "cancelled") return;
+        byDate[r.date] = (byDate[r.date] || 0) + 1;
+    });
+
+    const empty = [];
+    for(let i=0; i<=daysAhead; i++){
+        const d = new Date(today);
+        d.setDate(d.getDate() + i);
+        const key = formatDate(d);
+        if(!byDate[key]) empty.push(d);
+    }
+
+    return empty;
+}
+
+function renderAiDashboard(){
+
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth()+1).padStart(2,"0");
+    const prefix = `${year}-${month}`;
+
+    const monthList = reservations.filter(r => r.date.startsWith(prefix));
+    const monthActive = monthList.filter(r => r.status !== "cancelled");
+    const monthCancelled = monthList.filter(r => r.status === "cancelled");
+
+    document.getElementById("aiMonthCount").innerText = monthActive.length;
+    document.getElementById("aiMonthCancel").innerText = monthCancelled.length;
+
+    const daysInMonth = new Date(year, today.getMonth()+1, 0).getDate();
+    const capacity = daysInMonth * TIME_SLOTS.length;
+    const rate = capacity ? Math.round((monthActive.length / capacity) * 100) : 0;
+
+    document.getElementById("aiRate").innerText = rate + "%";
+    document.getElementById("aiRateBar").style.width = Math.min(rate,100) + "%";
+
+    const emptyDates = computeEmptyDates(45);
+    document.getElementById("aiEmptyCount").innerText = emptyDates.length;
+
+    const issueList = document.getElementById("aiIssueList");
+
+    if(emptyDates.length === 0){
+        issueList.innerHTML = `<div class="issue-row"><span>앞으로 45일간 빈 날짜가 없습니다.</span><span class="badge ok">양호</span></div>`;
+    }else{
+        issueList.innerHTML = emptyDates.slice(0,6).map(d => `
+            <div class="issue-row">
+                <span>${formatDateShort(d)} (${getWeekdayKR(d)}) 예약 없음</span>
+                <span class="badge high">홍보 추천</span>
+            </div>
+        `).join("");
+    }
+
+    const activity = loadActivity();
+    document.getElementById("aiContentCount").innerText = activity.length;
+
+    const activityBody = document.getElementById("activityBody");
+
+    if(activity.length === 0){
+        activityBody.innerHTML = `<tr><td colspan="3" style="text-align:center;color:#a2adb8;padding:20px;">아직 생성한 콘텐츠가 없습니다.</td></tr>`;
+    }else{
+        activityBody.innerHTML = activity.slice(0,8).map(a => `
+            <tr>
+                <td>${new Date(a.at).toLocaleDateString("ko-KR")}</td>
+                <td>${a.action}</td>
+                <td><span class="badge ok">완료</span></td>
+            </tr>
+        `).join("");
+    }
+}
+
+function analysisPrevMonth(){ analysisDate.setMonth(analysisDate.getMonth()-1); renderAnalysisCalendar(); }
+function analysisNextMonth(){ analysisDate.setMonth(analysisDate.getMonth()+1); renderAnalysisCalendar(); }
+function analysisToday(){ analysisDate = new Date(); renderAnalysisCalendar(); }
+
+// 예약 분석 탭 전용 달력. 클릭하면 메인 캘린더와 동일한 예약 상세 모달이 열립니다.
+function renderAnalysisCalendar(){
+
+    const year = analysisDate.getFullYear();
+    const month = analysisDate.getMonth();
+
+    document.getElementById("analysisMonthTitle").innerText = `${year}년 ${month+1}월`;
+
+    const container = document.getElementById("analysisCalendarDays");
+    container.innerHTML = "";
+
+    const todayString = formatDate(new Date());
+    const firstDay = new Date(year,month,1).getDay();
+    const lastDate = new Date(year,month+1,0).getDate();
+    const previousLast = new Date(year,month,0).getDate();
+
+    for(let i=firstDay-1; i>=0; i--){
+        const day = document.createElement("div");
+        day.className = "day other-month";
+        day.innerHTML = `<div class="day-number">${previousLast-i}</div>`;
+        container.appendChild(day);
+    }
+
+    for(let d=1; d<=lastDate; d++){
+
+        const date = new Date(year,month,d);
+        const dateString = formatDate(date);
+
+        const day = document.createElement("div");
+        day.className = "day";
+
+        if(dateString === todayString) day.classList.add("today");
+
+        const list = reservations
+            .filter(r => r.date === dateString && r.status !== "cancelled")
+            .sort((a,b) => a.time.localeCompare(b.time));
+
+        // 오늘 이후 날짜인데 예약이 하나도 없으면 홍보 추천 대상으로 표시합니다.
+        const isFuture = dateString >= todayString;
+        if(isFuture && list.length === 0) day.classList.add("empty-promo");
+
+        day.onclick = function(){ openDay(dateString); };
+
+        let html = `<div class="day-number">${d}</div>`;
+
+        const maxShow = 4;
+
+        list.slice(0,maxShow).forEach(r => {
+            html += `
+            <div class="reservation" style="background:${STATUS_COLOR[r.status]}" onclick="event.stopPropagation();openReservationDetail('${r.id}')">
+                ${r.time} ${r.name}
+            </div>
+            `;
+        });
+
+        if(list.length > maxShow){
+            html += `<div class="more">+ ${list.length-maxShow}건 더보기</div>`;
+        }
+
+        if(isFuture && list.length === 0){
+            html += `<div class="promo-tag">홍보추천</div>`;
+        }
+
+        day.innerHTML = html;
+        container.appendChild(day);
+    }
+}
+
+function renderAnalysis(){
+
+    renderAnalysisCalendar();
+
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth()+1).padStart(2,"0");
+    const prefix = `${year}-${month}`;
+
+    const monthList = reservations.filter(r => r.date.startsWith(prefix));
+
+    document.getElementById("anCompleted").innerText = monthList.filter(r => r.status === "completed").length;
+    document.getElementById("anPending").innerText = monthList.filter(r => r.status === "pending").length;
+    document.getElementById("anCancelled").innerText = monthList.filter(r => r.status === "cancelled").length;
+
+    const emptyDates = computeEmptyDates(30);
+    document.getElementById("anEmpty").innerText = emptyDates.length;
+
+    const resultBox = document.getElementById("analysisResult");
+
+    if(emptyDates.length === 0){
+        resultBox.textContent =
+            "🤖 AI 분석 결과\n\n앞으로 30일 내 예약 공백이 없습니다. 현재 예약 흐름이 양호합니다.";
+        return;
+    }
+
+    const topDates = emptyDates.slice(0,3).map(d => `${formatDateShort(d)}(${getWeekdayKR(d)})`).join(", ");
+
+    resultBox.textContent =
+`🤖 AI 분석 결과
+
+${topDates} 예약이 비어 있습니다.
+→ 해당 날짜를 대상으로 지역 홍보 콘텐츠를 만드는 것을 추천합니다.
+→ 고객에게 "이번 주 방문 가능 일정"을 안내하는 방식이 예약 전환에 적합합니다.`;
+}
+
+/* =========================
+   AI 설정 (이 브라우저에만 저장)
+========================= */
+
+function loadSettings(){
+    try{ return JSON.parse(localStorage.getItem(SETTINGS_STORAGE)) || {}; }
+    catch(err){ return {}; }
+}
+
+function fillSettingsForm(){
+    const s = loadSettings();
+    document.getElementById("setName").value = s.name || "팡이케어";
+    document.getElementById("setRegion").value = s.region || "";
+    document.getElementById("setService").value = s.service || "에어컨 분해 세척";
+    document.getElementById("setAutoPublish").value = s.autoPublish || "off";
+    document.getElementById("setPolicy").value = s.policy ||
+        "실제 작업 경험과 제공된 정보만 사용한다. 허위 후기나 허위 할인 정보를 만들지 않는다. 콘텐츠는 관리자 확인 후 게시한다.";
+}
+
+function saveSettingsFromForm(){
+    const s = {
+        name: document.getElementById("setName").value,
+        region: document.getElementById("setRegion").value,
+        service: document.getElementById("setService").value,
+        autoPublish: document.getElementById("setAutoPublish").value,
+        policy: document.getElementById("setPolicy").value
+    };
+    localStorage.setItem(SETTINGS_STORAGE, JSON.stringify(s));
+    alert("AI 설정이 저장되었습니다.");
+}
+
+// 블로그/홍보 문구 입력창을 열 때, 아직 값이 없다면 AI 설정값으로 채워줍니다.
+function prefillAiForms(){
+    const s = loadSettings();
+
+    const region = document.getElementById("region");
+    if(region && !region.value) region.value = s.region || "";
+
+    const adRegion = document.getElementById("adRegion");
+    if(adRegion && !adRegion.value) adRegion.value = s.region || "";
+}
+
+/* =========================
+   AI 콘텐츠 생성 이력 (이 브라우저에만 저장)
+========================= */
+
+function loadActivity(){
+    try{ return JSON.parse(localStorage.getItem(ACTIVITY_STORAGE)) || []; }
+    catch(err){ return []; }
+}
+
+function logActivity(action){
+    const log = loadActivity();
+    log.unshift({ at: new Date().toISOString(), action });
+    localStorage.setItem(ACTIVITY_STORAGE, JSON.stringify(log.slice(0,50)));
+}
+
+/* =========================
+   AI 콘텐츠 생성 (템플릿 기반 초안 — 실제 AI 호출 아님)
+========================= */
+
+function generateBlog(){
+    const r = document.getElementById("region").value || "우리 동네";
+    const t = document.getElementById("type").value;
+    const c = document.getElementById("condition").value || "내부 오염이 의심되는 상태";
+    const m = document.getElementById("method").value || "분해 세척";
+    const s = document.getElementById("story").value || "";
+
+    const out =
+`제목
+${r} ${t} ${m} 청소 후기｜에어컨 냄새와 오염 상태 점검부터 세척까지
+
+본문 초안
+오늘은 ${r}에서 ${t} 청소 작업을 진행했습니다.
+
+고객님께서는 ${c} 때문에 청소를 요청해 주셨습니다. 먼저 에어컨 내부 상태를 확인한 뒤 ${m} 방식으로 작업을 진행했습니다.
+
+이번 작업의 실제 특이사항은 다음과 같습니다.
+${s || "(작업 특이사항을 입력하면 이 자리에 반영됩니다.)"}
+
+에어컨은 겉으로 깨끗해 보여도 내부 열교환기와 송풍 부위에 오염이 쌓일 수 있습니다. 냄새나 바람 상태가 평소와 다르다면 내부 상태를 확인해 보는 것이 좋습니다.
+
+※ 위 내용은 실제 작업 정보를 바탕으로 작성한 초안입니다. 게시 전 작업 사진과 실제 내용을 확인해 주세요.`;
+
+    const el = document.getElementById("blogResult");
+    el.style.display = "block";
+    el.textContent = out;
+
+    logActivity("AI 블로그 초안 생성");
+}
+
+function generateAd(){
+    const r = document.getElementById("adRegion").value || "우리 동네";
+    const d = document.getElementById("adDate").value || "가까운 시일";
+    const t = document.getElementById("adTarget").value;
+    const ch = document.getElementById("channel").value;
+
+    const out =
+`[${ch} 홍보 초안]
+
+${r} ${t} 예약 가능한 일정 안내
+
+${d} 방문 일정에 여유가 있습니다.
+에어컨을 사용하면서 냄새나 내부 오염이 걱정된다면 미리 청소해 보세요.
+
+팡이케어가 현장 상태를 확인하고 필요한 범위에 맞춰 꼼꼼하게 세척해 드립니다.
+
+📅 방문 가능일: ${d}
+📍 지역: ${r}
+🧼 서비스: ${t}
+
+※ 실제 예약 가능 여부와 가격을 확인한 뒤 게시해 주세요.`;
+
+    const el = document.getElementById("adResult");
+    el.style.display = "block";
+    el.textContent = out;
+
+    logActivity("AI 홍보 문구 생성");
+}
+
+function generateReview(){
+    const s = document.getElementById("reviewText").value || "";
+
+    const out =
+`소중한 후기 남겨주셔서 감사합니다 😊
+
+${s.includes("친절") ? "서비스 과정에서 만족하셨다니 정말 다행입니다. " : ""}편하게 이용하실 수 있었다니 저희도 기쁩니다.
+
+앞으로도 고객님께서 안심하고 사용하실 수 있도록 꼼꼼하게 작업하겠습니다. 다음에 에어컨 청소가 필요하실 때도 편하게 찾아주세요. 감사합니다!`;
+
+    const el = document.getElementById("reviewResult");
+    el.style.display = "block";
+    el.textContent = out;
+
+    logActivity("AI 리뷰 답변 생성");
 }
 
 /* =========================
