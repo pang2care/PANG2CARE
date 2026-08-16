@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /admin.html
+Disallow: /apps-script/
+Disallow: /1/
+
+Sitemap: https://pang2care.github.io/PANG2CARE/sitemap.xml
