@@ -295,6 +295,29 @@ header{
     50%{ transform:scale(1.12); }
 }
 
+.aircon-svg .sparkle{
+    animation:sparkleTwinkle 1.8s ease-in-out infinite;
+    transform-origin:center;
+}
+
+.aircon-svg .sparkle.s2{ animation-delay:.5s; }
+.aircon-svg .sparkle.s3{ animation-delay:1s; }
+
+@keyframes sparkleTwinkle{
+    0%,100%{ opacity:.35; transform:scale(.7) rotate(0deg); }
+    50%{ opacity:1; transform:scale(1.05) rotate(12deg); }
+}
+
+.aircon-svg .mascot{
+    animation:mascotBob 3s ease-in-out infinite;
+    transform-origin:43px 105px;
+}
+
+@keyframes mascotBob{
+    0%,100%{ transform:translateY(0); }
+    50%{ transform:translateY(-4px); }
+}
+
 .aircon:after{
     content:"CLEAN AIR";
     position:absolute;
@@ -702,6 +725,11 @@ section{
     border:1px solid var(--line);
     position:relative;
     overflow:hidden;
+    transition:opacity .5s ease;
+}
+
+.review.fading{
+    opacity:0;
 }
 
 .review:before{
@@ -1311,6 +1339,11 @@ footer:before{
     width:100%;
     height:100%;
     object-fit:cover;
+    transition:opacity .5s ease;
+}
+
+.gallery-item img.fading{
+    opacity:0;
 }
 
 .gallery-ph{
@@ -1622,15 +1655,50 @@ footer:before{
 
                 <div class="aircon">
                     <svg class="aircon-svg" viewBox="0 0 220 120" aria-hidden="true">
-                        <rect x="14" y="16" width="192" height="46" rx="16" fill="#ffffff" stroke="#0b7f89" stroke-width="3"/>
-                        <rect x="30" y="44" width="160" height="6" rx="3" fill="#e1f7f2"/>
-                        <rect x="30" y="54" width="160" height="6" rx="3" fill="#e1f7f2"/>
-                        <circle cx="188" cy="28" r="4" fill="#ff6b4a"/>
-                        <path class="flow f1" d="M45 68 Q60 88 45 106" stroke="#18b4bf" stroke-width="4" fill="none" stroke-linecap="round"/>
-                        <path class="flow f2" d="M80 68 Q95 92 80 114" stroke="#18b4bf" stroke-width="4" fill="none" stroke-linecap="round"/>
-                        <path class="flow f3" d="M115 68 Q130 88 115 106" stroke="#18b4bf" stroke-width="4" fill="none" stroke-linecap="round"/>
-                        <path class="flow f4" d="M150 68 Q165 92 150 114" stroke="#18b4bf" stroke-width="4" fill="none" stroke-linecap="round"/>
-                        <path class="drop" d="M186 92c0 7-6 13-14 13s-14-6-14-13c0-9 14-26 14-26s14 17 14 26z" fill="#ff6b4a"/>
+                        <!-- wall-mounted air conditioner -->
+                        <rect x="86" y="8" width="122" height="30" rx="11" fill="#ffffff" stroke="#0b7f89" stroke-width="3"/>
+                        <rect x="102" y="20" width="92" height="3.5" rx="1.75" fill="#e1f7f2"/>
+                        <rect x="102" y="26.5" width="92" height="3.5" rx="1.75" fill="#e1f7f2"/>
+                        <circle cx="196" cy="16" r="2.6" fill="#ff6b4a"/>
+
+                        <!-- spray mist drifting up to the unit -->
+                        <circle class="flow f1" cx="76" cy="46" r="3.4" fill="#8fe0e6"/>
+                        <circle class="flow f2" cx="88" cy="40" r="2.6" fill="#8fe0e6"/>
+                        <circle class="flow f3" cx="98" cy="35" r="3" fill="#8fe0e6"/>
+                        <circle class="flow f4" cx="110" cy="30" r="2.1" fill="#8fe0e6"/>
+
+                        <!-- sparkles -->
+                        <path class="sparkle" d="M140 18 l2.2 5.4 5.4 2.2 -5.4 2.2 -2.2 5.4 -2.2 -5.4 -5.4 -2.2 5.4 -2.2z" fill="#ffd166"/>
+                        <path class="sparkle s2" d="M178 32 l1.7 4.2 4.2 1.7 -4.2 1.7 -1.7 4.2 -1.7 -4.2 -4.2 -1.7 4.2 -1.7z" fill="#ff6b4a"/>
+                        <path class="sparkle s3" d="M56 25 l1.4 3.4 3.4 1.4 -3.4 1.4 -1.4 3.4 -1.4 -3.4 -3.4 -1.4 3.4 -1.4z" fill="#18b4bf"/>
+
+                        <!-- cleaning mascot -->
+                        <g class="mascot">
+                            <ellipse cx="43" cy="116" rx="22" ry="3.4" fill="#0b7f89" opacity=".08"/>
+
+                            <path d="M25 86 C13 78 15 62 30 54" stroke="#0b7f89" stroke-width="6" fill="none" stroke-linecap="round"/>
+                            <rect x="22" y="46" width="9" height="15" rx="2" fill="#ff6b4a" transform="rotate(-18 26.5 53)"/>
+                            <rect x="18.5" y="42" width="5.5" height="6.5" rx="1.6" fill="#0b7f89" transform="rotate(-18 21.5 45)"/>
+
+                            <path d="M61 90 C74 87 78 78 72 68" stroke="#0b7f89" stroke-width="6" fill="none" stroke-linecap="round"/>
+                            <rect x="66" y="61" width="13" height="10" rx="3" fill="#ff6b4a" transform="rotate(18 72.5 66)"/>
+
+                            <path d="M43 50 C53 62 66 74 66 90 C66 104 55 114 43 114 C31 114 20 104 20 90 C20 74 33 62 43 50 Z"
+                                  fill="#18b4bf" stroke="#0b7f89" stroke-width="2.6"/>
+                            <path d="M43 50 C50 60 60 68 63 78 C54 71 46 68 43 68 C40 68 32 71 23 78 C26 68 36 60 43 50 Z"
+                                  fill="#5fd6d9" opacity=".55"/>
+
+                            <ellipse cx="33" cy="114" rx="6" ry="4" fill="#0b7f89"/>
+                            <ellipse cx="53" cy="114" rx="6" ry="4" fill="#0b7f89"/>
+
+                            <ellipse cx="35" cy="88" rx="4" ry="5.2" fill="#ffffff"/>
+                            <ellipse cx="51" cy="88" rx="4" ry="5.2" fill="#ffffff"/>
+                            <circle cx="35.7" cy="89.5" r="1.9" fill="#06414a"/>
+                            <circle cx="51.7" cy="89.5" r="1.9" fill="#06414a"/>
+                            <circle cx="28" cy="95" r="3.3" fill="#ff6b4a" opacity=".35"/>
+                            <circle cx="58" cy="95" r="3.3" fill="#ff6b4a" opacity=".35"/>
+                            <path d="M37 98 Q43 102 49 98" stroke="#06414a" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+                        </g>
                     </svg>
                 </div>
 
@@ -2198,37 +2266,37 @@ footer:before{
         <div class="gallery-grid">
 
             <div class="gallery-item reveal">
-                <img src="images/gallery-01.jpg" alt="팡이케어 작업 사진 1" onerror="this.remove()">
+                <img src="images/gallery-01.jpg" alt="팡이케어 작업 사진 1" class="rotating-photo" data-images='["images/gallery-01.jpg","images/gallery-01-2.jpg","images/gallery-01-3.jpg","images/gallery-01-4.jpg"]'>
                 <div class="gallery-ph">사진 등록 예정</div>
                 <div class="gallery-caption">벽걸이 에어컨 청소</div>
             </div>
 
             <div class="gallery-item reveal">
-                <img src="images/gallery-02.jpg" alt="팡이케어 작업 사진 2" onerror="this.remove()">
+                <img src="images/gallery-02.jpg" alt="팡이케어 작업 사진 2" class="rotating-photo" data-images='["images/gallery-02.jpg","images/gallery-02-2.jpg","images/gallery-02-3.jpg","images/gallery-02-4.jpg"]'>
                 <div class="gallery-ph">사진 등록 예정</div>
                 <div class="gallery-caption">스탠드 에어컨 청소</div>
             </div>
 
             <div class="gallery-item reveal">
-                <img src="images/gallery-03.jpg" alt="팡이케어 작업 사진 3" onerror="this.remove()">
+                <img src="images/gallery-03.jpg" alt="팡이케어 작업 사진 3" class="rotating-photo" data-images='["images/gallery-03.jpg","images/gallery-03-2.jpg","images/gallery-03-3.jpg","images/gallery-03-4.jpg"]'>
                 <div class="gallery-ph">사진 등록 예정</div>
                 <div class="gallery-caption">시스템 에어컨 청소</div>
             </div>
 
             <div class="gallery-item reveal">
-                <img src="images/gallery-04.jpg" alt="팡이케어 작업 사진 4" onerror="this.remove()">
+                <img src="images/gallery-04.jpg" alt="팡이케어 작업 사진 4" class="rotating-photo" data-images='["images/gallery-04.jpg","images/gallery-04-2.jpg","images/gallery-04-3.jpg","images/gallery-04-4.jpg","images/gallery-04-5.jpg"]'>
                 <div class="gallery-ph">사진 등록 예정</div>
                 <div class="gallery-caption">업소용 에어컨 청소</div>
             </div>
 
             <div class="gallery-item reveal">
-                <img src="images/gallery-05.jpg" alt="팡이케어 작업 사진 5" onerror="this.remove()">
+                <img src="images/gallery-05.jpg" alt="팡이케어 작업 사진 5" class="rotating-photo" data-images='["images/gallery-05.jpg","images/gallery-05-2.jpg","images/gallery-05-3.jpg","images/gallery-05-4.jpg"]'>
                 <div class="gallery-ph">사진 등록 예정</div>
                 <div class="gallery-caption">분해 세척 과정</div>
             </div>
 
             <div class="gallery-item reveal">
-                <img src="images/gallery-06.jpg" alt="팡이케어 작업 사진 6" onerror="this.remove()">
+                <img src="images/gallery-06.jpg" alt="팡이케어 작업 사진 6" class="rotating-photo" data-images='["images/gallery-06.jpg","images/gallery-06-2.jpg","images/gallery-06-3.jpg","images/gallery-06-4.jpg"]'>
                 <div class="gallery-ph">사진 등록 예정</div>
                 <div class="gallery-caption">청소 완료 후</div>
             </div>
@@ -2263,7 +2331,7 @@ footer:before{
         </div>
 
 
-        <div class="review-grid">
+        <div class="review-grid" id="reviewGrid">
 
             <div class="review reveal">
 
@@ -2272,11 +2340,31 @@ footer:before{
                 </div>
 
                 <p>
-                    "실제 고객 후기 내용을 이곳에 넣어주세요."
+                    "청소 깔끔하게 해주시고
+                    마무리 정리도 잘해주세요."
                 </p>
 
                 <small>
-                    고객 후기
+                    수연맘 고객님 (당근 단골리뷰)
+                </small>
+
+            </div>
+
+
+            <div class="review reveal">
+
+                <div class="stars">
+                    ★★★★☆
+                </div>
+
+                <p>
+                    "사장님 시간 약속 잘 지키시고
+                    청소 꼼꼼하게 해주세요.
+                    부모님댁에도 부탁드리려고요."
+                </p>
+
+                <small>
+                    아름다운세상 고객님 (당근리뷰)
                 </small>
 
             </div>
@@ -2289,30 +2377,11 @@ footer:before{
                 </div>
 
                 <p>
-                    "청소 전후 사진과 함께 실제 후기를
-                    등록하면 신뢰도를 높일 수 있습니다."
+                    "청소 정말 잘해주시네요."
                 </p>
 
                 <small>
-                    고객 후기
-                </small>
-
-            </div>
-
-
-            <div class="review reveal">
-
-                <div class="stars">
-                    ★★★★★
-                </div>
-
-                <p>
-                    "예약 과정이나 작업 만족도에 대한
-                    실제 고객의 이야기를 넣어주세요."
-                </p>
-
-                <small>
-                    고객 후기
+                    제주싸나이 고객님 (당근 단골리뷰)
                 </small>
 
             </div>
@@ -2893,6 +2962,144 @@ const revealObserver = new IntersectionObserver((entries) => {
 }, { threshold: 0.15 });
 
 revealItems.forEach(el => revealObserver.observe(el));
+
+/* 작업현황(갤러리) 사진을 5초마다 여러 장으로 자동 전환합니다. */
+
+document.querySelectorAll(".rotating-photo").forEach(img => {
+    let images;
+    try{
+        images = JSON.parse(img.dataset.images || "[]");
+    }catch(err){
+        images = [];
+    }
+
+    if(images.length < 2) return;
+
+    let index = 0;
+
+    setInterval(() => {
+        const nextIndex = (index + 1) % images.length;
+        const preload = new Image();
+
+        preload.onload = () => {
+            img.classList.add("fading");
+            setTimeout(() => {
+                img.src = images[nextIndex];
+                index = nextIndex;
+                img.classList.remove("fading");
+            }, 500);
+        };
+
+        preload.src = images[nextIndex];
+    }, 5000);
+});
+
+/* 고객 후기 자동 순환.
+   지금은 안내 문구 3개뿐이라 화면에는 변화가 없지만,
+   실제 후기가 들어올 때마다 아래 reviews 배열에 항목을 추가해두면
+   3개를 초과하는 순간부터 5초마다 카드 3장이 통째로 다음 후기들로 순환됩니다. */
+
+const reviews = [
+    { stars: 5, text: "청소 깔끔하게 해주시고 마무리 정리도 잘해주세요.", author: "수연맘 고객님 (당근 단골리뷰)" },
+    { stars: 4, text: "사장님 시간 약속 잘 지키시고 청소 꼼꼼하게 해주세요. 부모님댁에도 부탁드리려고요.", author: "아름다운세상 고객님 (당근리뷰)" },
+    { stars: 5, text: "청소 정말 잘해주시네요.", author: "제주싸나이 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "믿고 일보고 왔더니 새것으로 만들어 놓고 가셨네요.", author: "안녕하세요 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "여름 맞이로 천장형 시스템 에어컨 2대 분해 청소를 맡겼는데, 부품 하나하나 다 뜯어서 찌든 때와 먼지까지 물기 하나 없이 완벽하고 깨끗하게 세척해 주셨어요.", author: "수나네 고객님 (당근리뷰)" },
+    { stars: 4.5, text: "에어컨 분해 청소를 맡겼는데 벽걸이에어컨 안 곰팡이까지 사장님이 꼼꼼하고 깔끔하게 청소해주셨어요. 청소 후 관리법도 자세히 설명해주시고 너무 친절하셨습니다.", author: "앙살 고객님 (당근리뷰)" },
+    { stars: 4.5, text: "사장님이 굉장히 섬세하고 깔끔하게 청소해주시네요. 에어컨이 새로 산 듯 깨끗해졌습니다.", author: "summer 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "여러 곳 비교하다가 당근 후기 보고 신청했는데, 기사님이 친절하시고 정말 깔끔하게 진행해주셨어요. 진심으로 추천드립니다.", author: "m나눔이m 고객님 (당근리뷰)" },
+    { stars: 5, text: "급하게 이용했는데 청소는 기본이고 주의사항이나 문제점도 잘 짚어주셔서 추천드립니다.", author: "뷰댜 고객님 (당근리뷰)" },
+    { stars: 5, text: "다른 업체에서 포기한 까다로운 모델을 팡이케어에서 두세 번 정성껏 세척하고 설명까지 잘 해주셔서 속이 시원했습니다.", author: "사나 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "청소 청결하게 잘 하시네요. 수고하셨습니다.", author: "열매 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "에어컨 3대를 맡겼는데 매트를 깔아 오염 없이 완전 분해 청소해주시고, 관리 방법과 주기까지 알기 쉽게 설명해주셔서 정말 만족했습니다.", author: "룜룜 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "청소를 잘해주시네요.", author: "증산사자 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "2년에 한 번은 청소를 해야 한다고 하여 단골로 꾸준히 이용하려고 합니다. 꼼꼼하게 청소해주셔서 감사합니다.", author: "자전거 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "에어컨 분해부터 세척, 조립까지 꼼꼼하게 진행해 주셨습니다. 작업 후 상태도 깔끔하고 설명도 친절해서 만족합니다. 다음에도 이용할 생각입니다.", author: "당금마 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "깨끗하게 정말 잘해주셨습니다. 내년에도 또 뵐게요!", author: "스크류어퍼 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "에어컨 분해청소는 처음인데 너무 친절하시고 꼼꼼하셔서 만족 100%입니다. 필터 상태 보고 놀라서 앞으로 매년 맡기려고요. 진짜 추천합니다!", author: "오렌지 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "말 그대로 완전 팡이제로입니다. 굿!", author: "테스형 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "나름 관리한다고 냉방 후 송풍도 돌렸는데 열어보니 내부에 곰팡이와 먼지가 가득해서 깜짝 놀랐어요. 사장님이 꼼꼼하고 친절하게 작업해주셔서 올여름 쾌적하게 보낼 것 같습니다.", author: "웃으면복이와요 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "청소 정말 깔끔하게 해주세요.", author: "꾸기 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "온도를 조금만 높이면 곰팡이 냄새가 날 정도였는데, 분해 청소 후엔 기관지 약한 가족들도 안심하고 에어컨을 켤 수 있게 됐어요. 꼼꼼하게 청소해주셔서 감사합니다.", author: "행복한냥냥 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "에어컨을 전부 분해해서 친절하고 깔끔하게 청소해주셨어요.", author: "2의e승 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "급하게 연락드렸는데 금방 날짜 잡아주시고 청소해주셨어요. 처음 청소라 찌든 먼지가 심했는데 깔끔하게 해주셔서 냄새도 안 나고, 필터 관리법까지 알려주셔서 대만족입니다.", author: "콩나물 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "이 가격에 이 퀄리티가 믿기지 않아요. 대표님이 직접 오셔서 설명부터 작업 섬세함까지 눈앞에서 보니 믿고 맡길 수 있었습니다.", author: "캐롯천사 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "친절하시고 신속하고 깨끗하게 청소해주셨어요. 올여름은 더 쾌적하게 지낼 수 있을 것 같습니다.", author: "굿굿굿 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "청소 잘 받았습니다!", author: "뽀로로 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "시부모님 추천으로 청소업체를 바꿔봤는데 너무 만족스러워요. 눈에 거슬렸던 곰팡이가 싹 제거돼서 새 에어컨이 된 것 같아요. 손도 빠르고 꼼꼼하십니다. 내년에 또 뵐게요!", author: "heee 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "에어컨 곰팡이 냄새보다 훨씬 심한 악취가 났는데, 청소 후엔 공기부터가 다른 느낌이에요. 가격도 서비스도 너무 만족스러워서 지인들에게 소개하고 싶습니다. 무조건 강추드려요.", author: "까르페디엠 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "일정을 제 스케줄에 맞춰주시고, 아기와 반려동물이 있는 집이라 더 신경 써주셔서 감사했어요. 무엇보다 꼼꼼하게 작업해주셔서 좋았습니다. 내년에도 잘 부탁드립니다.", author: "밤편지 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "사장님이 너무 친절하시고 꼼꼼하게 작업해주시네요. 냄새와 곰팡이 제거가 훌륭하게 잘 되어서 매년 이용할 것 같습니다.", author: "열이 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "청소를 꼼꼼하게 너무 잘해주셨어요. 너무 맘에 들어요!", author: "바다 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "당일에 바로 오셔서 늦은 시간까지 정말 꼼꼼하게 해주셨습니다. 다른 곳보다 가격도 저렴했어요. 내년에 또 하겠습니다.", author: "양산1번 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "다른 곳 견적받고 가격이 저렴해서 맡겼는데 꼼꼼하고 깨끗하게 해주셔서 너무 만족해요. 의류매장이라 오염 걱정했는데 비닐 보양 작업까지 꼼꼼히 해주셔서 안심됐습니다. 강추요!", author: "득템의여왕 고객님 (당근리뷰)" },
+    { stars: 5, text: "사장님이 너무 꼼꼼하게 청소해주시고 설명도 잘해주셔서, 우리집 에어컨 청소는 매년 팡이케어로 결정했습니다.", author: "yun5088 고객님 (당근리뷰)" },
+    { stars: 5, text: "오브제 모델 에어컨 구매 후 첫 청소였는데, 가격도 저렴하고 사장님도 엄청 친절하셨어요. 저렴하다고 대충 하시는 게 절대 아니고 전후 차이가 정말 심할 만큼 깨끗하게 세척해주셨어요. 다음에도 꼭 사장님한테 맡길 거예요.", author: "린쁠리 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "에어컨 청소 맡겼는데 만족도 높네요. 분해·조립도 꼼꼼하고 설명도 잘해주셨어요. 묵은 먼지와 곰팡이가 싹 나오고 냄새도 없어졌고, 바람 세기도 좋아진 느낌이에요. 추가금 없이 깔끔하게 작업해주셔서 만족했습니다.", author: "야옹아야옹해봐 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "청소 깨끗하게 정말 잘해 주시네요. 과정도 그렇고 결과물까지 깔끔하게 잘 받아서 만족스러워요.", author: "태수니 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "청소 정말 깔끔하고 신속하게 잘 해주셨습니다. 사장님이 많이 친절하셔서 너무 좋았습니다.", author: "조억지 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "청소 참 잘하시네요.", author: "흑탕이 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "청소 깔끔히 잘 받았습니다.", author: "711032 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "청소 성실하게 잘해주셔서 감사합니다.", author: "모래 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "대표님이 친절하시고 전문가십니다. 청소 전후 사진을 보여주시면서 정직하게 진행하신 걸 확인할 수 있었어요. 진작 전문 청소를 맡길 걸 하는 생각이 들었습니다. 감사합니다!", author: "꾸잼 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "친절하시고 깨끗하게 잘하시는 것 같습니다. 작업 결과가 기대됩니다.", author: "아시바골 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "사장님이 친절하시고 전체 분해 후 꼼꼼하게 세척해주셨어요. 새것처럼 깨끗하게 해주신다는 말을 들으니 기분도 좋았습니다. 올여름은 깨끗한 에어컨으로 시원하게 보낼 것 같아요.", author: "슬슬이 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "에어컨 청소는 생각도 안 하고 있었는데 지인 소개로 팡이케어를 알게 되어 청소하게 됐어요. 전문가답게 아주 깔끔하게 해주셨어요. 대만족입니다!", author: "석산주민 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "에어컨 청소업체를 알아보다가 당근에서 우연히 발견하고 문의드렸는데 너무 친절하게 상담해주시고 꼼꼼하게 견적 넣어주셔서 팡이케어로 결정했습니다. 오셔서도 내부외부 꼼꼼하게 청소해주셔서 대만족입니다.", author: "쩡쩡 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "시스템에어컨 2대를 청소받았는데 기대 이상으로 만족스러웠어요. 아기가 있는 집이라 위생이 걱정이었는데 그 부분까지 먼저 신경 써서 꼼꼼하게 작업해주셔서 믿음이 갔고, 주변 정리까지 완벽하게 해주셨습니다.", author: "블루오렌지 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "오늘 청소했어요. 지난번 이용했던 곳보다 훨씬 꼼꼼하고 설명도 잘해주셔서 강력 추천합니다.", author: "우당탕마미 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "기존에 거래하던 업체를 못 쓰게 돼서 당근에서 찾아봤는데, 가장 빠르고 저렴하게 견적 주셔서 문의드렸어요. 오시자마자 에어컨 상태도 설명해주시고 꼼꼼하게 청소해주시는 걸 보니 정말 마음이 놓였습니다.", author: "보검이모친 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "에어컨 청소 견적을 20군데에서 받아보고 팡이케어를 선택했는데 정말 만족스러웠습니다. 처음부터 끝까지 친절하게 설명해주시고 꼼꼼하게 작업해주셔서 믿음이 갔어요. 청소 후엔 새것처럼 깔끔해지고 냄새도 사라져서 너무 쾌적합니다.", author: "poongsooni 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "곰팡이 핀 에어컨 상태를 보고 경악스러웠는데, 작업 후 모습을 보니 완전 만족스러워요. 오랜 시간 꼼꼼하게 작업해주시고 관리법도 알려주셨어요. 매년 해야 할 것 같아요, 강력 추천합니다!", author: "어띠 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "청소 깔끔하고 좋아요.", author: "언덕정육마스터 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "기분 좋은 친절함과 함께 청소를 너무 깨끗하게 진행해주셨습니다. 이번 여름 시원하게 보낼 수 있어 감사합니다.", author: "오전일찍깨는이웃 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "꼼꼼하게 청소 잘해주셨어요. 필터 교체가 필요하다고 알려주시고 교체 방법도 설명해주셨어요. 에어컨 3대라 약 5시간 소요됐는데 믿고 맡기셔도 좋을 것 같아요.", author: "호수공주 고객님 (당근리뷰)" },
+    { stars: 5, text: "완전 강추드려요. 저희 집 에어컨 물이 조금 새서 고민했는데 그것도 잡아주시고 청소는 말할 것도 없이 잘해주십니다. 뒷정리까지 완벽하게 해주시고 가셨어요.", author: "못난이 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "오늘 서비스 깔끔하게 잘 받았어요.", author: "새동네 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "깔끔하게 청소 잘해주세요. 다음에도 신청해야겠어요.", author: "금땡이 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "거실·안방 에어컨 2대를 요청드렸는데 아침 일찍 오셔서 작업 공간 확보부터 분해, 청소, 마무리까지 너무 꼼꼼하게 해주셔서 감사했습니다. 만족스러워서 시부모님댁 시스템에어컨도 부탁드렸어요.", author: "꼬물 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "부모님이 먼저 하셔서 저도 같이 신청해서 했습니다. 날짜도 빨리 잡히고 친절하셔서 좋아요. 다음에도 이용할게요!", author: "칸쵸 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "인상도 좋으시고 정말 친절하십니다. 에어컨을 다 분해해서 깨끗하게 청소해주시는데 옆에서 보고 있으니 믿고 맡기셔도 될 것 같습니다.", author: "투더문 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "사장님 친절하시고 네 시간 가까이 너무 꼼꼼하게 청소해주셔서 정말 만족합니다. 추천 또 추천합니다!", author: "제신 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "곧 아기가 태어나서 깔끔하게 해주는 곳을 찾다가 청소했습니다. 처음부터 문제점도 친절하게 다 짚어주시고 꼼꼼하게 세척해주셨어요. 무엇보다 저렴하게 이용한 것 같아요.", author: "배유 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "정말 세심하게 작업해주시네요. 감사합니다.", author: "전현경 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "작년 여름 에어컨 냄새로 고생했던지라 올해는 일찍 청소를 신청했어요. 사장님이 일정도 잘 맞춰주시고 꼼꼼히 청소해주셨어요. 가성비 있게 청소한 것 같아 추천드려요.", author: "하늘하늘 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "급하게 일정을 잡았는데 친절하고 신속하게 잡아주셨어요. 배려해주시고 가격도 저렴해서 최고입니다. 비포애프터를 보니 올여름 깨끗하게 지낼 수 있을 것 같아 기분이 좋습니다.", author: "꿈꾸는다락방 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "정말 열심히 해주셔서 감사드립니다. 다음에도 꼭 이용할게요. 수고하셨습니다.", author: "소풍 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "에어컨 청소를 맡겼는데 정말 만족스러웠어요. 분해해서 내부까지 꼼꼼하게 세척해주셔서 눈에 안 보이던 먼지와 곰팡이까지 깨끗하게 제거됐어요. 청소 후엔 냄새도 사라지고 바람이 훨씬 상쾌해졌습니다.", author: "디그닥 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "사장님이 너무 친절하시고 꼼꼼하게 신경 써주셔서 마음 편하게 맡겨두고 외출도 했습니다. 다음에도 이용하겠습니다.", author: "이웃집또털어 고객님 (당근리뷰)" },
+    { stars: 5, text: "엄청 친절하시고 시간 약속 철저하세요. 마무리까지 깔끔하게 잘 해주셔서 만족만족입니다!", author: "킹밥 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "저렴한 가격으로 여름철 대비 제대로 했습니다. 깔끔하게 해주셔서 여름철에 에어컨 맘 놓고 사용하겠어요. 단골 맺고 다음에도 잘 부탁드립니다.", author: "윗집테라스 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "이용해보니까 꼼꼼하게 분해해서 세척하고, 원래 조금 허술했던 부분까지 나사를 꼼꼼하게 조여주셔서 마음에 꼭 들었습니다. 마무리도 깨끗하게 해주셔서 고마웠습니다.", author: "산소 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "가격 대비 청소 깔끔하게 잘해주시고 뒷마무리도 너무 좋아요.", author: "항상배고파 고객님 (당근 단골리뷰)" },
+    { stars: 5, text: "저렴한 가격으로 에어컨 청소했어요. 설명도 자세히 해주셔서 단골 등록했어요.", author: "뒷골목 고객님 (당근 단골리뷰)" }
+];
+
+const reviewCards = document.querySelectorAll("#reviewGrid .review");
+
+function renderReviewCard(card, review){
+    const filled = Math.round(review.stars);
+    card.querySelector(".stars").textContent = "★".repeat(filled) + "☆".repeat(5 - filled);
+    card.querySelector("p").textContent = `"${review.text}"`;
+    card.querySelector("small").textContent = review.author;
+}
+
+if(reviews.length > reviewCards.length && reviewCards.length > 0){
+    let start = 0;
+
+    setInterval(() => {
+        start = (start + reviewCards.length) % reviews.length;
+
+        reviewCards.forEach(card => card.classList.add("fading"));
+
+        setTimeout(() => {
+            reviewCards.forEach((card, i) => {
+                renderReviewCard(card, reviews[(start + i) % reviews.length]);
+                card.classList.remove("fading");
+            });
+        }, 500);
+    }, 5000);
+}
 
 </script>
 
