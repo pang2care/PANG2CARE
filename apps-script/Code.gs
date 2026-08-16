@@ -253,7 +253,14 @@ function handleCreate_(sheet, data){
         return (data && data[c.key] !== undefined) ? data[c.key] : "";
     });
 
-    sheet.appendRow(row);
+    // appendRow()로 값을 먼저 쓰면 "09:00" 같은 값이 시간으로 자동 인식되어
+    // 앞자리 0이 사라지는 문제가 있어(예: "9:00"), 값을 쓰기 전에 먼저
+    // 텍스트 서식을 지정한 뒤 setValues()로 씁니다.
+    const newRow = sheet.getLastRow() + 1;
+    const range = sheet.getRange(newRow, 1, 1, COLUMNS.length);
+    range.setNumberFormat("@");
+    range.setValues([row]);
+
     return jsonOutput_({ ok: true, id: id });
 }
 
@@ -276,7 +283,11 @@ function handleUpdate_(sheet, id, patch, adminKey){
             let value = patch[c.key];
             if(c.key === "history") value = JSON.stringify(value);
             if(c.key === "status") value = statusToLabel_(value);
-            sheet.getRange(rowIndex, i+1).setValue(value);
+            // "09:00" 같은 값이 시간으로 자동 인식되지 않도록 값을 쓰기 전에
+            // 텍스트 서식을 먼저 지정합니다.
+            const cell = sheet.getRange(rowIndex, i+1);
+            cell.setNumberFormat("@");
+            cell.setValue(value);
         }
     });
 
