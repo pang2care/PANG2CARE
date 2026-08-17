@@ -1553,14 +1553,14 @@ function handleAdminError(err){
 
 async function loadReservations(){
     try{
-        reservations = await apiList();
+        reservations = await apiList({ adminKey: getAdminKey() });
         renderCalendar();
         if(selectedDate) renderDayList();
 
         // AI 대시보드가 열려있을 수 있으니 함께 최신화합니다. (예약 캘린더 하단 분석은 renderCalendar 안에서 갱신됨)
         if(document.getElementById("view-dashboard").classList.contains("active")) renderAiDashboard();
     }catch(err){
-        console.error(err);
+        handleAdminError(err);
     }
 }
 
@@ -1844,7 +1844,7 @@ function renderReservationCard(r){
     <div class="day-reservation ${s === 'cancelled' ? 'cancelled' : ''}" style="border-left-color:${color}">
 
         <div class="res-head">
-            <div class="res-time">${r.time}</div>
+            <div class="res-time">${escapeHtml(r.time)}</div>
             <div class="status" style="background:${color}">${STATUS_LABEL[s]}</div>
         </div>
 
@@ -1854,7 +1854,7 @@ function renderReservationCard(r){
             <br>
             ${escapeHtml(r.type)} ${escapeHtml(r.count)}대
             <br>
-            ${r.address ? escapeHtml(r.address) : "주소 미입력"}
+            ${escapeHtml(r.address) || "주소 미입력"}
         </div>
 
         ${r.memo ? `

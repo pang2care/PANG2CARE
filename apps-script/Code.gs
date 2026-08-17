@@ -135,9 +135,25 @@ function doGet(e){
     const rows = sheet.getDataRange().getValues();
     const idIndex = idColumnIndex_();
 
-    const list = rows.slice(1)
+    let list = rows.slice(1)
         .filter(row => row[idIndex])
         .map(row => rowToObject_(row));
+
+    const params = (e && e.parameter) || {};
+
+    if(params.adminKey){
+        // 관리자 비밀번호가 맞을 때만 이름/연락처/주소 등 전체 정보를 반환합니다.
+        if(params.adminKey !== ADMIN_KEY){
+            return jsonOutput_({ ok: false, error: "관리자 인증이 필요합니다." });
+        }
+    }else if(params.phone){
+        // 고객 본인 조회: 연락처가 일치하는 예약만 반환합니다.
+        const phoneFilter = String(params.phone).replace(/\D/g,"");
+        list = list.filter(r => String(r.phone || "").replace(/\D/g,"") === phoneFilter);
+    }else{
+        // 비로그인 상태(예약 가능 시간 확인용)에는 개인정보 없이 날짜/시간/상태만 반환합니다.
+        list = list.map(r => ({ date: r.date, time: r.time, status: r.status }));
+    }
 
     return jsonOutput_({ ok: true, reservations: list });
 }
@@ -243,6 +259,13 @@ function doPost(e){
 }
 
 function handleCreate_(sheet, data){
+    const required = ["name", "phone", "date", "time"];
+    const missing = required.filter(key => !(data && String(data[key] || "").trim()));
+
+    if(missing.length > 0){
+        return jsonOutput_({ ok: false, error: "필수 항목이 누락되었습니다: " + missing.join(", ") });
+    }
+
     const id = Utilities.getUuid();
 
     const row = COLUMNS.map(c => {

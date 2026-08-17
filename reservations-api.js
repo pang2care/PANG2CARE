@@ -33,11 +33,27 @@ const STATUS_COLOR = {
     cancelled: "#999999"
 };
 
-async function apiList(){
-    const res = await fetch(SHEET_API_URL, { method: "GET" });
+async function apiList(params){
+    const query = new URLSearchParams();
+    if(params && params.phone) query.set("phone", params.phone);
+    if(params && params.adminKey) query.set("adminKey", params.adminKey);
+    const qs = query.toString();
+
+    const res = await fetch(SHEET_API_URL + (qs ? ("?" + qs) : ""), { method: "GET" });
     const json = await res.json();
     if(!json.ok) throw new Error(json.error || "예약 목록을 불러오지 못했습니다.");
     return json.reservations;
+}
+
+/* 예약자가 입력한 이름/주소/메모 등을 화면에 그대로 꽂아 넣으면 악성 스크립트가 실행될 수 있어
+   (저장형 XSS), innerHTML에 넣기 전에는 반드시 이 함수로 이스케이프합니다. */
+function escapeHtml(value){
+    return String(value == null ? "" : value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
 }
 
 async function apiCreate(data){

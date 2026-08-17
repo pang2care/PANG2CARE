@@ -2910,8 +2910,8 @@ async function submitForm(event){
         return;
     }
 
-    if(phone.replace(/\D/g,"").length < 10){
-        showCustomAlert("전화번호를 숫자 10자리 이상 정확히 입력해주세요.");
+    if(!/^01[016789]\d{7,8}$/.test(phone.replace(/\D/g,""))){
+        showCustomAlert("휴대폰 번호를 정확히 입력해주세요. (예: 010-0000-0000)");
         return;
     }
 
@@ -2967,6 +2967,8 @@ async function submitForm(event){
 
 /* 연락처로 나의 예약을 조회하고, 취소를 "요청"합니다. 실제 취소는 관리자 승인 후 처리됩니다. */
 
+let lastLookupList = [];
+
 async function lookupReservations(){
     const phone = document.getElementById("lookupPhone").value.trim();
     const result = document.getElementById("lookupResult");
@@ -2980,15 +2982,15 @@ async function lookupReservations(){
 
     let list;
     try{
-        list = await apiList();
+        list = await apiList({ phone });
     }catch(err){
         result.innerHTML = '<div class="lookup-empty">조회 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.</div>';
         return;
     }
 
-    const mine = list
-        .filter(r => r.phone.replace(/-/g,"") === phone.replace(/-/g,""))
-        .sort((a,b) => (b.date+b.time).localeCompare(a.date+a.time));
+    const mine = list.sort((a,b) => (b.date+b.time).localeCompare(a.date+a.time));
+
+    lastLookupList = mine;
 
     if(mine.length === 0){
         result.innerHTML = '<div class="lookup-empty">해당 연락처로 등록된 예약이 없습니다.</div>';
@@ -3031,8 +3033,7 @@ async function requestCancel(id){
     if(!confirm("예약 취소를 요청하시겠습니까?\n관리자 확인 후 최종 취소 처리됩니다.")) return;
 
     try{
-        const list = await apiList();
-        const target = list.find(r => r.id === id);
+        const target = lastLookupList.find(r => r.id === id);
         if(!target) return;
 
         const history = [...(target.history || []), { action: "고객 취소 요청", at: new Date().toISOString() }];
