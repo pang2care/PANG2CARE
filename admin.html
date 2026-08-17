@@ -1627,7 +1627,7 @@ function renderCalendar(){
                 style="background:${STATUS_COLOR[r.status]}"
                 onclick="event.stopPropagation();openReservationDetail('${r.id}')"
             >
-                ${r.time} ${r.name}
+                ${escapeHtml(r.time)} ${escapeHtml(r.name)}
             </div>
             `;
         });
@@ -1849,24 +1849,24 @@ function renderReservationCard(r){
         </div>
 
         <div class="res-info">
-            <strong>${r.name}</strong>
-            · <a href="tel:${r.phone}">${r.phone}</a>
+            <strong>${escapeHtml(r.name)}</strong>
+            · <a href="tel:${escapeHtml(r.phone)}">${escapeHtml(r.phone)}</a>
             <br>
-            ${r.type} ${r.count}대
+            ${escapeHtml(r.type)} ${escapeHtml(r.count)}대
             <br>
-            ${r.address || "주소 미입력"}
+            ${r.address ? escapeHtml(r.address) : "주소 미입력"}
         </div>
 
         ${r.memo ? `
         <div class="res-memo">
             <div class="res-memo-label">고객 문의 / 요청사항</div>
-            ${r.memo}
+            ${escapeHtml(r.memo)}
         </div>` : ""}
 
         ${r.adminMemo ? `
         <div class="res-memo" style="background:#eef6f7;">
             <div class="res-memo-label">관리자 메모</div>
-            ${r.adminMemo}
+            ${escapeHtml(r.adminMemo)}
         </div>` : ""}
 
         <div class="res-actions">${actions}</div>

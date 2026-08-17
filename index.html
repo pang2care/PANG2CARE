@@ -3002,16 +3002,16 @@ async function lookupReservations(){
         <div class="lookup-item">
 
             <div class="lookup-item-head">
-                <strong>${r.date} ${r.time}</strong>
+                <strong>${escapeHtml(r.date)} ${escapeHtml(r.time)}</strong>
                 <span class="lookup-badge" style="background:${STATUS_COLOR[r.status]}">
                     ${STATUS_LABEL[r.status]}
                 </span>
             </div>
 
             <div class="lookup-info">
-                ${r.type} ${r.count}대<br>
-                ${r.address}
-                ${r.memo ? `<br>문의사항 : ${r.memo}` : ""}
+                ${escapeHtml(r.type)} ${escapeHtml(r.count)}대<br>
+                ${escapeHtml(r.address)}
+                ${r.memo ? `<br>문의사항 : ${escapeHtml(r.memo)}` : ""}
             </div>
 
             <button

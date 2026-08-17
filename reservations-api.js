@@ -6,6 +6,15 @@
 
 const TIME_SLOTS = ["09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00"];
 
+function escapeHtml(value){
+    return String(value == null ? "" : value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
 const STATUS_LABEL = {
     pending: "예약대기",
     confirmed: "예약확정",
