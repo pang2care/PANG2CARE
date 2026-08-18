@@ -1,0 +1,5 @@
+<div style="text-align:center;">
+  <a href="tel:010-5641-1192">
+    <img src="https://pang2care.github.io/PANG2CARE/naver-blog-assets/call-widget-170.png" alt="전화 문의" style="width:170px;">
+  </a>
+</div>
