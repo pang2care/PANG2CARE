@@ -983,6 +983,7 @@ textarea:focus{
         <div class="menu-title">AI 마케팅</div>
         <div class="menu">
             <button data-view="dashboard">📊 AI 대시보드</button>
+            <button data-view="beforeafter">🖼️ 전후사진 만들기</button>
             <button data-view="blog">✍️ AI 블로그 작성</button>
             <button data-view="content">📣 홍보 콘텐츠</button>
             <button data-view="news">🥕 당근 소식 작성</button>
@@ -1132,6 +1133,54 @@ textarea:focus{
                 </table>
             </div>
 
+        </section>
+
+
+        <!-- VIEW: 전후사진 만들기 -->
+
+        <section id="view-beforeafter" class="view">
+            <div class="panel">
+                <h2>🖼️ 전후사진 만들기</h2>
+                <div class="panel-sub">청소 전/후 사진 2장을 올리면 팡이케어 브랜드 틀(로고·Before/After 표시·문구)에 맞춰 자동으로 합성해 드립니다. 네이버 블로그 대표사진으로 바로 쓰기 좋아요.</div>
+
+                <div class="ai-form">
+                    <div class="full">
+                        <label>부제 (선택)</label>
+                        <input id="baSubtitle" placeholder="예: 벽걸이형 에어컨 분해청소">
+                    </div>
+
+                    <div>
+                        <label>청소 전 사진</label>
+                        <label class="photo-picker" for="baBeforeInput">
+                            <span>📷 클릭해서 청소 전 사진을 선택하세요</span>
+                            <input type="file" id="baBeforeInput" accept="image/*" onchange="handleBAPhoto(event,'before')">
+                        </label>
+                        <div class="photo-grid" id="baBeforeGrid"></div>
+                    </div>
+
+                    <div>
+                        <label>청소 후 사진</label>
+                        <label class="photo-picker" for="baAfterInput">
+                            <span>📷 클릭해서 청소 후 사진을 선택하세요</span>
+                            <input type="file" id="baAfterInput" accept="image/*" onchange="handleBAPhoto(event,'after')">
+                        </label>
+                        <div class="photo-grid" id="baAfterGrid"></div>
+                    </div>
+                </div>
+
+                <div class="ai-toolbar">
+                    <button class="btn btn-primary" onclick="generateBeforeAfter()">🖼️ 합성 이미지 만들기</button>
+                </div>
+
+                <div id="baResultWrap" style="display:none;margin-top:16px;">
+                    <canvas id="baCanvas" width="1000" height="1000" style="width:100%;max-width:420px;display:block;border-radius:12px;box-shadow:0 3px 15px rgba(0,0,0,.1);margin:0 auto;"></canvas>
+                    <div class="ai-toolbar" style="justify-content:center;margin-top:14px;">
+                        <button class="btn btn-primary" onclick="downloadBAImage()">⬇️ 이미지 다운로드</button>
+                    </div>
+                </div>
+
+                <div class="ai-note">※ 사진은 서버에 업로드되지 않고 이 브라우저 안에서만 합성됩니다. 완성된 이미지를 다운로드해서 네이버 블로그 등에 직접 올려주세요.</div>
+            </div>
         </section>
 
 
@@ -2108,6 +2157,158 @@ function logActivity(action){
 /* =========================
    AI 콘텐츠 생성 (템플릿 기반 초안 — 실제 AI 호출 아님)
 ========================= */
+
+/* =========================
+   전후사진 만들기 — 브라우저 캔버스로 청소 전/후 사진을 팡이케어 브랜드 틀에 합성.
+   서버에 업로드하지 않으며, 완성 이미지는 다운로드해서 직접 올려야 합니다.
+========================= */
+
+const baPhotos = { before: null, after: null };
+
+function handleBAPhoto(event, kind){
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+
+    if (baPhotos[kind]) URL.revokeObjectURL(baPhotos[kind].url);
+    baPhotos[kind] = { url: URL.createObjectURL(file), name: file.name };
+
+    event.target.value = "";
+    renderBAPhoto(kind);
+}
+
+function removeBAPhoto(kind){
+    if (baPhotos[kind]) URL.revokeObjectURL(baPhotos[kind].url);
+    baPhotos[kind] = null;
+    renderBAPhoto(kind);
+}
+
+function renderBAPhoto(kind){
+    const grid = document.getElementById(kind === "before" ? "baBeforeGrid" : "baAfterGrid");
+    const p = baPhotos[kind];
+    grid.innerHTML = p ? `
+        <div class="photo-thumb">
+            <img src="${p.url}" alt="${p.name}">
+            <button type="button" onclick="removeBAPhoto('${kind}')" title="삭제">×</button>
+        </div>
+    ` : "";
+}
+
+function baLoadImage(url){
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = url;
+    });
+}
+
+/* CSS object-fit:cover 방식으로 이미지를 목표 영역에 꽉 채워 그림 */
+function baDrawCover(ctx, img, dx, dy, dw, dh){
+    const srcRatio = img.width / img.height;
+    const dstRatio = dw / dh;
+    let sx, sy, sw, sh;
+
+    if (srcRatio > dstRatio){
+        sh = img.height;
+        sw = sh * dstRatio;
+        sx = (img.width - sw) / 2;
+        sy = 0;
+    } else {
+        sw = img.width;
+        sh = sw / dstRatio;
+        sx = 0;
+        sy = (img.height - sh) / 2;
+    }
+
+    ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
+}
+
+function baDrawPill(ctx, cx, cy, text, fill, textColor){
+    ctx.font = "bold 26px 'Noto Sans KR', sans-serif";
+    const padX = 22, padY = 12;
+    const tw = ctx.measureText(text).width;
+    const w = tw + padX * 2, h = 26 + padY * 2;
+    const x = cx - w / 2, y = cy - h / 2;
+    const r = h / 2;
+
+    ctx.fillStyle = fill;
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = textColor;
+    ctx.textBaseline = "middle";
+    ctx.textAlign = "center";
+    ctx.fillText(text, cx, cy + 1);
+}
+
+async function generateBeforeAfter(){
+    if (!baPhotos.before || !baPhotos.after){
+        alert("청소 전/후 사진을 모두 선택해주세요.");
+        return;
+    }
+
+    const [beforeImg, afterImg] = await Promise.all([
+        baLoadImage(baPhotos.before.url),
+        baLoadImage(baPhotos.after.url)
+    ]);
+
+    const canvas = document.getElementById("baCanvas");
+    const ctx = canvas.getContext("2d");
+    const W = 1000, H = 1000, HEADER_H = 90, FOOTER_H = 110;
+    const photoH = H - HEADER_H - FOOTER_H;
+    const halfW = W / 2;
+
+    ctx.clearRect(0, 0, W, H);
+
+    baDrawCover(ctx, beforeImg, 0, HEADER_H, halfW, photoH);
+    baDrawCover(ctx, afterImg, halfW, HEADER_H, halfW, photoH);
+
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(halfW - 3, HEADER_H, 6, photoH);
+
+    ctx.fillStyle = "#0b7f89";
+    ctx.fillRect(0, 0, W, HEADER_H);
+
+    ctx.fillStyle = "#ffffff";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
+    ctx.font = "bold 40px 'Noto Sans KR', sans-serif";
+    ctx.fillText("팡이케어", 30, 58);
+
+    const subtitle = document.getElementById("baSubtitle").value || "에어컨 분해청소 전문";
+    ctx.fillStyle = "#d2f5f2";
+    ctx.font = "bold 20px 'Noto Sans KR', sans-serif";
+    ctx.fillText(subtitle, 260, 52);
+
+    baDrawPill(ctx, halfW / 2, HEADER_H + photoH - 40, "청소 전 (Before)", "rgba(40,40,40,0.88)", "#ffffff");
+    baDrawPill(ctx, halfW + halfW / 2, HEADER_H + photoH - 40, "청소 후 (After)", "#0b7f89", "#ffffff");
+
+    ctx.fillStyle = "#063a40";
+    ctx.fillRect(0, H - FOOTER_H, W, FOOTER_H);
+
+    ctx.fillStyle = "#ffffff";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = "bold 34px 'Noto Sans KR', sans-serif";
+    ctx.fillText("비교가 안되는 깨끗함!", W / 2, H - FOOTER_H / 2 + 2);
+
+    document.getElementById("baResultWrap").style.display = "block";
+    logActivity("전후사진 합성 이미지 생성");
+}
+
+function downloadBAImage(){
+    const canvas = document.getElementById("baCanvas");
+    const link = document.createElement("a");
+    link.download = "팡이케어-전후사진.jpg";
+    link.href = canvas.toDataURL("image/jpeg", 0.92);
+    link.click();
+}
 
 /* 블로그 사진 첨부 — 서버에 업로드하지 않고, 이 브라우저 화면에서만 미리보기로 보여줍니다. */
 
