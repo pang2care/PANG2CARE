@@ -1579,7 +1579,7 @@ function doLogin(){
     loadReservations();
 
     if(!pollTimer){
-        pollTimer = setInterval(() => loadReservations(true), 60000);
+        pollTimer = setInterval(loadReservations, 60000);
     }
 }
 
@@ -1600,7 +1600,7 @@ function handleAdminError(err){
     }
 }
 
-async function loadReservations(background){
+async function loadReservations(){
     try{
         reservations = await apiList({ adminKey: getAdminKey() });
         renderCalendar();
@@ -1609,13 +1609,14 @@ async function loadReservations(background){
         // AI 대시보드가 열려있을 수 있으니 함께 최신화합니다. (예약 캘린더 하단 분석은 renderCalendar 안에서 갱신됨)
         if(document.getElementById("view-dashboard").classList.contains("active")) renderAiDashboard();
     }catch(err){
-        // 20초마다 도는 백그라운드 자동새로고침은 구글 Apps Script가 일시적으로 느리거나
-        // 오류를 반환할 때 실패할 수 있음 — 다른 작업(전후사진 만들기 등) 중에 알림창으로
-        // 끼어들지 않도록 조용히 넘어가고 다음 주기에 재시도한다.
-        if(background){
-            console.warn("백그라운드 예약 새로고침 실패:", err);
-        }else{
+        // 예약 목록 새로고침(자동/수동 새로고침 버튼 모두)은 구글 Apps Script가 일시적으로
+        // 느리거나 오류를 반환할 때 실패할 수 있음 — 다른 작업(전후사진 만들기 등) 중에
+        // 알림창으로 끼어들지 않도록 비밀번호 오류만 알리고 나머지는 콘솔에만 남긴다.
+        const message = String(err && err.message || "");
+        if(message.includes("인증")){
             handleAdminError(err);
+        }else{
+            console.warn("예약 목록 새로고침 실패:", err);
         }
     }
 }
@@ -2495,7 +2496,7 @@ ${s.includes("친절") ? "서비스 과정에서 만족하셨다니 정말 다�
 if(getAdminKey()){
     showAdminApp();
     loadReservations();
-    pollTimer = setInterval(() => loadReservations(true), 60000);
+    pollTimer = setInterval(loadReservations, 60000);
 }else{
     showLoginScreen();
 }
