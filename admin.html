@@ -1579,7 +1579,7 @@ function doLogin(){
     loadReservations();
 
     if(!pollTimer){
-        pollTimer = setInterval(() => loadReservations(true), 20000);
+        pollTimer = setInterval(() => loadReservations(true), 60000);
     }
 }
 
@@ -2495,7 +2495,7 @@ ${s.includes("친절") ? "서비스 과정에서 만족하셨다니 정말 다�
 if(getAdminKey()){
     showAdminApp();
     loadReservations();
-    pollTimer = setInterval(() => loadReservations(true), 20000);
+    pollTimer = setInterval(() => loadReservations(true), 60000);
 }else{
     showLoginScreen();
 }
