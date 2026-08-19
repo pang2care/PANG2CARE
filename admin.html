@@ -1141,27 +1141,35 @@ textarea:focus{
         <section id="view-beforeafter" class="view">
             <div class="panel">
                 <h2>🖼️ 전후사진 만들기</h2>
-                <div class="panel-sub">청소 전/후 사진 2장을 올리면 팡이케어 브랜드 틀(로고·Before/After 표시·문구)에 맞춰 자동으로 합성해 드립니다. 네이버 블로그 대표사진으로 바로 쓰기 좋아요.</div>
+                <div class="panel-sub" id="baPanelSub">청소 전/후 사진 2장을 올리면 팡이케어 브랜드 틀(로고·Before/After 표시·문구)에 맞춰 자동으로 합성해 드립니다. 네이버 블로그 대표사진으로 바로 쓰기 좋아요.</div>
 
                 <div class="ai-form">
+                    <div class="full">
+                        <label>사진 종류</label>
+                        <select id="baType" onchange="updateBAType()">
+                            <option value="clean">청소 전/후</option>
+                            <option value="disassemble">분해 전/후</option>
+                        </select>
+                    </div>
+
                     <div class="full">
                         <label>부제 (선택)</label>
                         <input id="baSubtitle" placeholder="예: 벽걸이형 에어컨 분해청소">
                     </div>
 
                     <div>
-                        <label>청소 전 사진</label>
+                        <label id="baBeforeLabel">청소 전 사진</label>
                         <label class="photo-picker" for="baBeforeInput">
-                            <span>📷 클릭해서 청소 전 사진을 선택하세요</span>
+                            <span id="baBeforeSpan">📷 클릭해서 청소 전 사진을 선택하세요</span>
                             <input type="file" id="baBeforeInput" accept="image/*" onchange="handleBAPhoto(event,'before')">
                         </label>
                         <div class="photo-grid" id="baBeforeGrid"></div>
                     </div>
 
                     <div>
-                        <label>청소 후 사진</label>
+                        <label id="baAfterLabel">청소 후 사진</label>
                         <label class="photo-picker" for="baAfterInput">
-                            <span>📷 클릭해서 청소 후 사진을 선택하세요</span>
+                            <span id="baAfterSpan">📷 클릭해서 청소 후 사진을 선택하세요</span>
                             <input type="file" id="baAfterInput" accept="image/*" onchange="handleBAPhoto(event,'after')">
                         </label>
                         <div class="photo-grid" id="baAfterGrid"></div>
@@ -2173,6 +2181,38 @@ function logActivity(action){
 
 const baPhotos = { before: null, after: null };
 
+const BA_TYPES = {
+    clean: {
+        label: "청소",
+        panelSub: "청소 전/후 사진 2장을 올리면 팡이케어 브랜드 틀(로고·Before/After 표시·문구)에 맞춰 자동으로 합성해 드립니다. 네이버 블로그 대표사진으로 바로 쓰기 좋아요.",
+        subtitlePlaceholder: "에어컨 분해청소 전문",
+        footer: "비교가 안되는 깨끗함!",
+        filename: "팡이케어-청소전후사진.jpg"
+    },
+    disassemble: {
+        label: "분해",
+        panelSub: "분해 전/후 사진 2장을 올리면 팡이케어 브랜드 틀(로고·Before/After 표시·문구)에 맞춰 자동으로 합성해 드립니다. 꼼꼼한 분해 과정을 보여줄 때 좋아요.",
+        subtitlePlaceholder: "에어컨 완전 분해청소",
+        footer: "이렇게까지 분해해서 청소합니다!",
+        filename: "팡이케어-분해전후사진.jpg"
+    }
+};
+
+function getBAType(){
+    return BA_TYPES[document.getElementById("baType").value] || BA_TYPES.clean;
+}
+
+function updateBAType(){
+    const t = getBAType();
+    document.getElementById("baPanelSub").textContent = t.panelSub;
+    document.getElementById("baSubtitle").placeholder = "예: 벽걸이형 에어컨 " + t.label + "청소";
+    document.getElementById("baBeforeLabel").textContent = t.label + " 전 사진";
+    document.getElementById("baAfterLabel").textContent = t.label + " 후 사진";
+    document.getElementById("baBeforeSpan").textContent = "📷 클릭해서 " + t.label + " 전 사진을 선택하세요";
+    document.getElementById("baAfterSpan").textContent = "📷 클릭해서 " + t.label + " 후 사진을 선택하세요";
+    document.getElementById("baResultWrap").style.display = "none";
+}
+
 function handleBAPhoto(event, kind){
     const file = event.target.files && event.target.files[0];
     if (!file) return;
@@ -2256,8 +2296,10 @@ function baDrawPill(ctx, cx, cy, text, fill, textColor){
 }
 
 async function generateBeforeAfter(){
+    const t = getBAType();
+
     if (!baPhotos.before || !baPhotos.after){
-        alert("청소 전/후 사진을 모두 선택해주세요.");
+        alert(t.label + " 전/후 사진을 모두 선택해주세요.");
         return;
     }
 
@@ -2289,13 +2331,13 @@ async function generateBeforeAfter(){
     ctx.font = "bold 40px 'Noto Sans KR', sans-serif";
     ctx.fillText("팡이케어", 30, 58);
 
-    const subtitle = document.getElementById("baSubtitle").value || "에어컨 분해청소 전문";
+    const subtitle = document.getElementById("baSubtitle").value || t.subtitlePlaceholder;
     ctx.fillStyle = "#d2f5f2";
     ctx.font = "bold 20px 'Noto Sans KR', sans-serif";
     ctx.fillText(subtitle, 260, 52);
 
-    baDrawPill(ctx, halfW / 2, HEADER_H + photoH - 40, "청소 전 (Before)", "rgba(40,40,40,0.88)", "#ffffff");
-    baDrawPill(ctx, halfW + halfW / 2, HEADER_H + photoH - 40, "청소 후 (After)", "#0b7f89", "#ffffff");
+    baDrawPill(ctx, halfW / 2, HEADER_H + photoH - 40, t.label + " 전 (Before)", "rgba(40,40,40,0.88)", "#ffffff");
+    baDrawPill(ctx, halfW + halfW / 2, HEADER_H + photoH - 40, t.label + " 후 (After)", "#0b7f89", "#ffffff");
 
     ctx.fillStyle = "#063a40";
     ctx.fillRect(0, H - FOOTER_H, W, FOOTER_H);
@@ -2304,16 +2346,16 @@ async function generateBeforeAfter(){
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.font = "bold 34px 'Noto Sans KR', sans-serif";
-    ctx.fillText("비교가 안되는 깨끗함!", W / 2, H - FOOTER_H / 2 + 2);
+    ctx.fillText(t.footer, W / 2, H - FOOTER_H / 2 + 2);
 
     document.getElementById("baResultWrap").style.display = "block";
-    logActivity("전후사진 합성 이미지 생성");
+    logActivity(t.label + " 전후사진 합성 이미지 생성");
 }
 
 function downloadBAImage(){
     const canvas = document.getElementById("baCanvas");
     const link = document.createElement("a");
-    link.download = "팡이케어-전후사진.jpg";
+    link.download = getBAType().filename;
     link.href = canvas.toDataURL("image/jpeg", 0.92);
     link.click();
 }
