@@ -432,6 +432,120 @@ body{
 }
 
 /* =========================
+   3채널 발행 목록
+========================= */
+
+.queue-item{
+    border:1px solid #e6ebf2;
+    border-radius:14px;
+    padding:16px;
+    margin-bottom:14px;
+}
+
+.queue-item-head{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:14px;
+}
+
+.queue-item-head b{
+    font-size:13px;
+}
+
+.queue-item-date{
+    font-size:11px;
+    color:#a2adb8;
+    margin-right:auto;
+}
+
+.queue-delete{
+    border:0;
+    background:transparent;
+    color:#a2adb8;
+    font-size:18px;
+    line-height:1;
+    cursor:pointer;
+    padding:2px 6px;
+}
+
+.queue-delete:hover{
+    color:#d64747;
+}
+
+.platform-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:12px;
+}
+
+.platform-card{
+    border:1px solid #dce4e8;
+    border-radius:12px;
+    padding:12px;
+    background:#fbfcfe;
+}
+
+.platform-card.approved{
+    border-color:#9cd8bd;
+    background:#f2faf6;
+}
+
+.platform-card-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:8px;
+    font-size:12px;
+    font-weight:800;
+}
+
+.status-pill{
+    padding:3px 8px;
+    border-radius:7px;
+    font-size:10px;
+    font-weight:700;
+    background:#eef1f5;
+    color:#7a879a;
+}
+
+.status-pill.approved{
+    background:#eaf8f0;
+    color:#16834b;
+}
+
+.platform-textarea{
+    width:100%;
+    min-height:170px;
+    padding:9px;
+    border:1px solid #dce4e8;
+    border-radius:8px;
+    font-family:inherit;
+    font-size:12px;
+    line-height:1.6;
+    resize:vertical;
+    outline:none;
+}
+
+.platform-textarea:focus{
+    border-color:#087f8c;
+}
+
+.platform-card-actions{
+    margin-top:8px;
+}
+
+.platform-card-actions .btn{
+    width:100%;
+    padding:9px 10px;
+    font-size:12px;
+}
+
+@media (max-width:900px){
+    .platform-grid{ grid-template-columns:1fr; }
+}
+
+/* =========================
    CALENDAR
 ========================= */
 
@@ -986,7 +1100,6 @@ textarea:focus{
             <button data-view="beforeafter">🖼️ 전후사진 만들기</button>
             <button data-view="blog">✍️ AI 블로그 작성</button>
             <button data-view="content">📣 홍보 콘텐츠</button>
-            <button data-view="news">🥕 당근 소식 작성</button>
             <button data-view="review">⭐ 리뷰 답변</button>
         </div>
 
@@ -1197,7 +1310,7 @@ textarea:focus{
         <section id="view-blog" class="view">
             <div class="panel">
                 <h2>✍️ AI 블로그 작성</h2>
-                <div class="panel-sub">AI가 자동 발행하지 않고, 실제 작업 내용을 바탕으로 초안을 만들어 줍니다.</div>
+                <div class="panel-sub" id="blogPanelSub">AI가 자동 발행하지 않고, 실제 작업 내용을 바탕으로 초안을 만들어 줍니다.</div>
 
                 <div class="ai-form">
                     <div><label>지역</label><input id="region" placeholder="예: 양산 물금"></div>
@@ -1227,11 +1340,17 @@ textarea:focus{
                 </div>
 
                 <div class="ai-toolbar">
-                    <button class="btn btn-primary" onclick="generateBlog()">✨ AI 블로그 초안 만들기</button>
+                    <button class="btn btn-primary" id="blogGenerateBtn" onclick="generateBlog()">✨ AI 블로그 초안 만들기</button>
                 </div>
 
                 <div id="blogResult" class="ai-result"></div>
                 <div class="ai-note">※ 실제 있었던 내용만 입력해주세요. 초안은 게시 전 반드시 확인해주세요. 첨부한 사진은 이 브라우저 화면에서만 미리보기로 보이며, 어디에도 업로드되지 않습니다 — 실제 블로그에 올릴 때 직접 첨부해주세요.</div>
+            </div>
+
+            <div class="panel" id="blogQueueSection">
+                <h2>📋 3채널 발행 목록</h2>
+                <div class="panel-sub">네이버 블로그 · 네이버 스마트플레이스 · 당근마켓 소식 3개 초안입니다. 내용을 수정한 뒤 각각 "승인"을 누르면 내용이 클립보드에 복사되고 해당 사이트가 새 창으로 열립니다 — 마지막 붙여넣기와 실제 게시는 직접 확인 후 진행해주세요.</div>
+                <div id="blogQueueList"></div>
             </div>
         </section>
 
@@ -1273,49 +1392,6 @@ textarea:focus{
         </section>
 
 
-        <!-- VIEW: 당근 소식 작성 -->
-
-        <section id="view-news" class="view">
-            <div class="panel">
-                <h2>🥕 당근 소식 작성</h2>
-                <div class="panel-sub">당근마켓 비즈니스 프로필의 "소식" 게시글 초안을 만듭니다. 동네 이웃에게 편하게 말 거는 톤으로 작성돼요.</div>
-
-                <div class="ai-form">
-                    <div><label>지역</label><input id="newsRegion" placeholder="예: 양산 물금"></div>
-                    <div><label>소식 주제</label>
-                        <select id="newsTopic">
-                            <option>예약 안내 / 빈 날짜 홍보</option>
-                            <option>시즌 안내 (여름철 대비 등)</option>
-                            <option>작업 후기 공유</option>
-                            <option>영업시간 / 휴무 안내</option>
-                            <option>기타 소식</option>
-                        </select>
-                    </div>
-                    <div class="full">
-                        <label>핵심 내용</label>
-                        <textarea id="newsContent" placeholder="이웃들에게 전하고 싶은 내용을 편하게 적어주세요. 예: 8/21 예약 여유 있어요, 여름 전 에어컨 청소 미리 하시라고 안내하고 싶어요 등"></textarea>
-                    </div>
-
-                    <div class="full">
-                        <label>사진 첨부</label>
-                        <label class="photo-picker" for="newsPhotoInput">
-                            <span>📷 클릭해서 사진을 선택하세요 (여러 장 가능)</span>
-                            <input type="file" id="newsPhotoInput" accept="image/*" multiple onchange="handleNewsPhotos(event)">
-                        </label>
-                        <div class="photo-grid" id="newsPhotoGrid"></div>
-                    </div>
-                </div>
-
-                <div class="ai-toolbar">
-                    <button class="btn btn-primary" onclick="generateNews()">🥕 AI 당근 소식 초안 만들기</button>
-                </div>
-
-                <div id="newsResult" class="ai-result"></div>
-                <div class="ai-note">※ 당근 비즈니스 프로필 → 소식 등록 화면에 그대로 붙여넣어 사용하시면 됩니다. 첨부한 사진은 이 브라우저 화면에서만 미리보기로 보이며 어디에도 업로드되지 않으니, 실제 등록할 때 당근 앱/사이트에서 직접 첨부해주세요. 게시 전 내용을 확인해주세요.</div>
-            </div>
-        </section>
-
-
         <!-- VIEW: 리뷰 답변 -->
 
         <section id="view-review" class="view">
@@ -1351,16 +1427,26 @@ textarea:focus{
                     <div><label>주요 지역</label><input id="setRegion" placeholder="예: 양산 / 부산 / 김해"></div>
                     <div><label>주요 서비스</label><input id="setService" value="에어컨 분해 세척"></div>
                     <div>
-                        <label>콘텐츠 자동 발행</label>
+                        <label>블로그 작성 시 3채널 발행 목록</label>
                         <select id="setAutoPublish">
-                            <option value="off">사용 안 함 — 추천</option>
-                            <option value="review">관리자 승인 후 발행</option>
+                            <option value="off">사용 안 함 — 지금처럼 초안 1개만 생성</option>
+                            <option value="review">사용 — 네이버 블로그·스마트플레이스·당근 소식 3개를 목록으로 만들고, 관리자 승인 후 발행</option>
                         </select>
                     </div>
                     <div class="full">
                         <label>AI 운영 원칙</label>
                         <textarea id="setPolicy">실제 작업 경험과 제공된 정보만 사용한다. 허위 후기나 허위 할인 정보를 만들지 않는다. 콘텐츠는 관리자 확인 후 게시한다.</textarea>
                     </div>
+                </div>
+
+                <div class="panel-sub" style="margin-top:22px;margin-bottom:10px;">
+                    <b>3채널 사이트 주소</b> — "승인" 버튼을 누르면 글 내용이 복사되고 아래 주소가 새 창으로 열립니다.
+                    글쓰기 페이지 주소를 알고 계시면 붙여넣어 주세요. 비워두면 사이트 첫 화면으로 이동합니다.
+                </div>
+                <div class="ai-form">
+                    <div><label>네이버 블로그 글쓰기 주소</label><input id="setNaverBlogUrl" placeholder="예: https://blog.naver.com/내블로그아이디?Redirect=Write"></div>
+                    <div><label>네이버 스마트플레이스 소식 등록 주소</label><input id="setSmartplaceUrl" placeholder="예: https://smartplace.naver.com"></div>
+                    <div><label>당근마켓 비즈니스 소식 등록 주소</label><input id="setDanggeunUrl" placeholder="예: https://business.daangn.com"></div>
                 </div>
 
                 <div class="ai-toolbar">
@@ -1489,6 +1575,7 @@ textarea:focus{
 const ADMIN_KEY_STORAGE = "pangicareAdminKey";
 const SETTINGS_STORAGE = "pangicareBizSettings";
 const ACTIVITY_STORAGE = "pangicareActivityLog";
+const QUEUE_STORAGE = "pangicarePublishQueue";
 
 let reservations = [];
 let currentDate = new Date();
@@ -1512,6 +1599,19 @@ function formatDateShort(date){
 
 function getWeekdayKR(date){
     return ["일","월","화","수","목","금","토"][date.getDay()];
+}
+
+function escapeHtml(str){
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+}
+
+function formatQueueDateTime(iso){
+    if(!iso) return "";
+    return new Date(iso).toLocaleString("ko-KR", { month:"numeric", day:"numeric", hour:"2-digit", minute:"2-digit" });
 }
 
 document.getElementById("todayText").innerText =
@@ -1552,7 +1652,8 @@ function openView(id){
 
     if(id === "dashboard") renderAiDashboard();
     if(id === "settings") fillSettingsForm();
-    if(id === "blog" || id === "content" || id === "news") prefillAiForms();
+    if(id === "blog" || id === "content") prefillAiForms();
+    if(id === "blog"){ updateBlogModeUI(); renderPublishQueue(); }
 }
 
 /* =========================
@@ -2127,6 +2228,9 @@ function fillSettingsForm(){
     document.getElementById("setAutoPublish").value = s.autoPublish || "off";
     document.getElementById("setPolicy").value = s.policy ||
         "실제 작업 경험과 제공된 정보만 사용한다. 허위 후기나 허위 할인 정보를 만들지 않는다. 콘텐츠는 관리자 확인 후 게시한다.";
+    document.getElementById("setNaverBlogUrl").value = s.naverBlogUrl || "";
+    document.getElementById("setSmartplaceUrl").value = s.smartplaceUrl || "";
+    document.getElementById("setDanggeunUrl").value = s.danggeunUrl || "";
 }
 
 function saveSettingsFromForm(){
@@ -2135,7 +2239,10 @@ function saveSettingsFromForm(){
         region: document.getElementById("setRegion").value,
         service: document.getElementById("setService").value,
         autoPublish: document.getElementById("setAutoPublish").value,
-        policy: document.getElementById("setPolicy").value
+        policy: document.getElementById("setPolicy").value,
+        naverBlogUrl: document.getElementById("setNaverBlogUrl").value.trim(),
+        smartplaceUrl: document.getElementById("setSmartplaceUrl").value.trim(),
+        danggeunUrl: document.getElementById("setDanggeunUrl").value.trim()
     };
     localStorage.setItem(SETTINGS_STORAGE, JSON.stringify(s));
     alert("AI 설정이 저장되었습니다.");
@@ -2150,9 +2257,6 @@ function prefillAiForms(){
 
     const adRegion = document.getElementById("adRegion");
     if(adRegion && !adRegion.value) adRegion.value = s.region || "";
-
-    const newsRegion = document.getElementById("newsRegion");
-    if(newsRegion && !newsRegion.value) newsRegion.value = s.region || "";
 }
 
 /* =========================
@@ -2391,38 +2495,259 @@ function renderBlogPhotos(){
     `).join("");
 }
 
-function generateBlog(){
-    const r = document.getElementById("region").value || "우리 동네";
-    const t = document.getElementById("type").value;
-    const c = document.getElementById("condition").value || "내부 오염이 의심되는 상태";
-    const m = document.getElementById("method").value || "분해 세척";
-    const s = document.getElementById("story").value || "";
+function collectBlogInput(){
+    return {
+        region: document.getElementById("region").value || "우리 동네",
+        type: document.getElementById("type").value,
+        condition: document.getElementById("condition").value || "내부 오염이 의심되는 상태",
+        method: document.getElementById("method").value || "분해 세척",
+        story: document.getElementById("story").value || "",
+        photoLine: blogPhotos.length
+            ? `\n📷 첨부 사진 ${blogPhotos.length}장 선택됨 — 아래 순서대로 본문에 배치해주세요.\n${blogPhotos.map((p,i) => `  ${i+1}. ${p.name}`).join("\n")}\n`
+            : ""
+    };
+}
 
-    const photoLine = blogPhotos.length
-        ? `\n📷 첨부 사진 ${blogPhotos.length}장 선택됨 — 아래 순서대로 본문에 배치해주세요.\n${blogPhotos.map((p,i) => `  ${i+1}. ${p.name}`).join("\n")}\n`
-        : "";
-
-    const out =
+function buildNaverBlogDraft(input){
+    const { region, type, condition, method, story, photoLine } = input;
+    return (
 `제목
-${r} ${t} ${m} 청소 후기｜에어컨 냄새와 오염 상태 점검부터 세척까지
+${region} ${type} ${method} 청소 후기｜에어컨 냄새와 오염 상태 점검부터 세척까지
 
 본문 초안
-오늘은 ${r}에서 ${t} 청소 작업을 진행했습니다.
+오늘은 ${region}에서 ${type} 청소 작업을 진행했습니다.
 
-고객님께서는 ${c} 때문에 청소를 요청해 주셨습니다. 먼저 에어컨 내부 상태를 확인한 뒤 ${m} 방식으로 작업을 진행했습니다.
+고객님께서는 ${condition} 때문에 청소를 요청해 주셨습니다. 먼저 에어컨 내부 상태를 확인한 뒤 ${method} 방식으로 작업을 진행했습니다.
 
 이번 작업의 실제 특이사항은 다음과 같습니다.
-${s || "(작업 특이사항을 입력하면 이 자리에 반영됩니다.)"}
+${story || "(작업 특이사항을 입력하면 이 자리에 반영됩니다.)"}
 
 에어컨은 겉으로 깨끗해 보여도 내부 열교환기와 송풍 부위에 오염이 쌓일 수 있습니다. 냄새나 바람 상태가 평소와 다르다면 내부 상태를 확인해 보는 것이 좋습니다.
 ${photoLine}
-※ 위 내용은 실제 작업 정보를 바탕으로 작성한 초안입니다. 게시 전 작업 사진과 실제 내용을 확인해 주세요.`;
+※ 위 내용은 실제 작업 정보를 바탕으로 작성한 초안입니다. 게시 전 작업 사진과 실제 내용을 확인해 주세요.`
+    );
+}
 
-    const el = document.getElementById("blogResult");
-    el.style.display = "block";
-    el.textContent = out;
+function buildSmartplaceDraft(input){
+    const { region, type, condition, method, story } = input;
+    return (
+`[${region} ${type} 청소 작업 안내]
+
+${type} 내부 ${condition}(으)로 ${method} 작업을 진행했습니다.
+${story ? `\n${story}\n` : ""}
+꼼꼼한 분해 세척으로 냄새와 오염을 관리해 드립니다. 방문 상담 및 예약 문의 환영합니다.
+
+※ 위 내용은 실제 작업 정보를 바탕으로 작성한 초안입니다. 게시 전 확인해 주세요.`
+    );
+}
+
+function buildDanggeunDraft(input){
+    const { region, story } = input;
+    return (
+`안녕하세요, ${region} 이웃분들 😊
+에어컨 청소 전문 팡이케어입니다.
+
+[작업 후기 공유]
+
+${story || "(작업 후기를 입력하면 이 자리에 반영됩니다.)"}
+
+에어컨 내부 냄새나 오염이 걱정되신다면 편하게 문의 주세요!
+이웃분들 항상 응원합니다 🥕
+
+※ 당근 비즈니스 프로필 → 소식 등록에 붙여넣어 사용하세요. 게시 전 내용을 확인해주세요.`
+    );
+}
+
+function generateBlog(){
+    const input = collectBlogInput();
+    const reviewMode = loadSettings().autoPublish === "review";
+
+    if(reviewMode){
+        addToPublishQueue(input);
+    }else{
+        const el = document.getElementById("blogResult");
+        el.style.display = "block";
+        el.textContent = buildNaverBlogDraft(input);
+    }
 
     logActivity("AI 블로그 초안 생성" + (blogPhotos.length ? ` (사진 ${blogPhotos.length}장)` : ""));
+}
+
+/* =========================
+   3채널 발행 목록 (네이버 블로그 / 스마트플레이스 / 당근 소식)
+   승인을 누르면 내용을 클립보드에 복사하고 해당 사이트를 새 창으로 엽니다.
+   이 브라우저에만 저장되며, 실제 게시는 사람이 마지막으로 확인 후 붙여넣습니다.
+========================= */
+
+const PUBLISH_PLATFORMS = [
+    { key: "naverBlog", label: "네이버 블로그" },
+    { key: "smartplace", label: "네이버 스마트플레이스" },
+    { key: "danggeun", label: "당근마켓 소식" }
+];
+
+function updateBlogModeUI(){
+    const reviewMode = loadSettings().autoPublish === "review";
+
+    const section = document.getElementById("blogQueueSection");
+    if(section) section.style.display = reviewMode ? "" : "none";
+
+    const sub = document.getElementById("blogPanelSub");
+    if(sub){
+        sub.textContent = reviewMode
+            ? "AI가 자동 발행하지 않고, 실제 작업 내용을 바탕으로 초안을 만듭니다. 아래에서 만들면 네이버 블로그 · 스마트플레이스 · 당근 소식 3개가 발행 목록에 함께 담깁니다."
+            : "AI가 자동 발행하지 않고, 실제 작업 내용을 바탕으로 초안을 만들어 줍니다.";
+    }
+
+    const btn = document.getElementById("blogGenerateBtn");
+    if(btn) btn.textContent = reviewMode ? "✨ 3채널 발행 목록 만들기" : "✨ AI 블로그 초안 만들기";
+}
+
+function getPublishQueue(){
+    try{ return JSON.parse(localStorage.getItem(QUEUE_STORAGE)) || []; }
+    catch(err){ return []; }
+}
+
+function savePublishQueue(list){
+    localStorage.setItem(QUEUE_STORAGE, JSON.stringify(list));
+}
+
+function addToPublishQueue(input){
+    const item = {
+        id: "q" + Date.now(),
+        createdAt: new Date().toISOString(),
+        region: input.region,
+        platforms: {
+            naverBlog: { content: buildNaverBlogDraft(input), status: "draft", approvedAt: null },
+            smartplace: { content: buildSmartplaceDraft(input), status: "draft", approvedAt: null },
+            danggeun: { content: buildDanggeunDraft(input), status: "draft", approvedAt: null }
+        }
+    };
+
+    const list = getPublishQueue();
+    list.unshift(item);
+    savePublishQueue(list);
+    renderPublishQueue();
+
+    const section = document.getElementById("blogQueueSection");
+    if(section) section.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function renderPublishQueue(){
+    const wrap = document.getElementById("blogQueueList");
+    if(!wrap) return;
+
+    const list = getPublishQueue();
+
+    if(!list.length){
+        wrap.innerHTML = `<div class="ai-note">아직 만든 발행 세트가 없습니다. 위에서 작업 내용을 입력하고 목록을 만들어 보세요.</div>`;
+        return;
+    }
+
+    wrap.innerHTML = list.map(item => `
+        <div class="queue-item">
+            <div class="queue-item-head">
+                <b>${escapeHtml(item.region || "작업")} 발행 세트</b>
+                <span class="queue-item-date">${formatQueueDateTime(item.createdAt)}</span>
+                <button type="button" class="queue-delete" onclick="deletePublishQueueItem('${item.id}')" title="목록에서 삭제">×</button>
+            </div>
+            <div class="platform-grid">
+                ${PUBLISH_PLATFORMS.map(p => renderPlatformCard(item, p)).join("")}
+            </div>
+        </div>
+    `).join("");
+}
+
+function renderPlatformCard(item, platform){
+    const p = item.platforms[platform.key];
+    const approved = p.status === "approved";
+
+    return `
+        <div class="platform-card ${approved ? "approved" : ""}">
+            <div class="platform-card-head">
+                <span>${platform.label}</span>
+                <span class="status-pill ${approved ? "approved" : "draft"}">${approved ? "✅ 승인완료" : "초안"}</span>
+            </div>
+            <textarea class="platform-textarea" oninput="updatePlatformContent('${item.id}','${platform.key}', this.value)">${escapeHtml(p.content)}</textarea>
+            <div class="platform-card-actions">
+                <button type="button" class="btn btn-light" onclick="approvePlatform('${item.id}','${platform.key}')">${approved ? "🔁 다시 복사 + 열기" : "✅ 승인 → 복사 + 사이트 열기"}</button>
+            </div>
+            ${approved ? `<div class="ai-note">승인 시각: ${formatQueueDateTime(p.approvedAt)}</div>` : ""}
+        </div>
+    `;
+}
+
+function updatePlatformContent(itemId, platformKey, value){
+    const list = getPublishQueue();
+    const item = list.find(i => i.id === itemId);
+    if(!item) return;
+
+    const p = item.platforms[platformKey];
+    const wasApproved = p.status === "approved";
+    p.content = value;
+
+    if(wasApproved){
+        p.status = "draft";
+        p.approvedAt = null;
+    }
+
+    savePublishQueue(list);
+    if(wasApproved) renderPublishQueue();
+}
+
+function approvePlatform(itemId, platformKey){
+    const list = getPublishQueue();
+    const item = list.find(i => i.id === itemId);
+    if(!item) return;
+
+    const platform = PUBLISH_PLATFORMS.find(p => p.key === platformKey);
+    const p = item.platforms[platformKey];
+
+    copyToClipboard(p.content);
+
+    const settings = loadSettings();
+    const defaultUrl = {
+        naverBlog: "https://blog.naver.com",
+        smartplace: "https://smartplace.naver.com",
+        danggeun: "https://business.daangn.com"
+    };
+    const settingUrl = {
+        naverBlog: settings.naverBlogUrl,
+        smartplace: settings.smartplaceUrl,
+        danggeun: settings.danggeunUrl
+    };
+    window.open(settingUrl[platformKey] || defaultUrl[platformKey], "_blank");
+
+    p.status = "approved";
+    p.approvedAt = new Date().toISOString();
+    savePublishQueue(list);
+    renderPublishQueue();
+
+    logActivity(`${platform.label} 승인 → 복사 + 사이트 열기`);
+}
+
+function deletePublishQueueItem(itemId){
+    if(!confirm("이 발행 세트를 목록에서 삭제할까요?")) return;
+    savePublishQueue(getPublishQueue().filter(i => i.id !== itemId));
+    renderPublishQueue();
+}
+
+function copyToClipboard(text){
+    if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+    }else{
+        fallbackCopy(text);
+    }
+}
+
+function fallbackCopy(text){
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    try{ document.execCommand("copy"); } catch(err){}
+    document.body.removeChild(ta);
 }
 
 function generateAd(){
@@ -2452,66 +2777,6 @@ ${d} 방문 일정에 여유가 있습니다.
     el.textContent = out;
 
     logActivity("AI 홍보 문구 생성");
-}
-
-/* 당근 소식 사진 첨부 — 블로그와 마찬가지로 서버 업로드 없이 브라우저 미리보기만 제공합니다. */
-
-let newsPhotos = [];
-
-function handleNewsPhotos(event){
-    const files = Array.from(event.target.files || []);
-
-    files.forEach(file => {
-        newsPhotos.push({ url: URL.createObjectURL(file), name: file.name });
-    });
-
-    event.target.value = "";
-    renderNewsPhotos();
-}
-
-function removeNewsPhoto(index){
-    URL.revokeObjectURL(newsPhotos[index].url);
-    newsPhotos.splice(index, 1);
-    renderNewsPhotos();
-}
-
-function renderNewsPhotos(){
-    const grid = document.getElementById("newsPhotoGrid");
-    grid.innerHTML = newsPhotos.map((p, i) => `
-        <div class="photo-thumb">
-            <img src="${p.url}" alt="${p.name}">
-            <button type="button" onclick="removeNewsPhoto(${i})" title="삭제">×</button>
-        </div>
-    `).join("");
-}
-
-function generateNews(){
-    const r = document.getElementById("newsRegion").value || "우리 동네";
-    const topic = document.getElementById("newsTopic").value;
-    const content = document.getElementById("newsContent").value || "";
-
-    const photoLine = newsPhotos.length
-        ? `\n📷 첨부 사진 ${newsPhotos.length}장 선택됨 — 당근에 등록할 때 함께 올려주세요.\n`
-        : "";
-
-    const out =
-`안녕하세요, ${r} 이웃분들 😊
-에어컨 청소 전문 팡이케어입니다.
-
-[${topic}]
-
-${content || "(핵심 내용을 입력하면 이 자리에 반영됩니다.)"}
-${photoLine}
-궁금하신 점 있으시면 편하게 채팅 남겨주세요!
-이웃분들 항상 응원합니다 🥕
-
-※ 당근 비즈니스 프로필 → 소식 등록에 붙여넣어 사용하세요. 게시 전 내용을 확인해주세요.`;
-
-    const el = document.getElementById("newsResult");
-    el.style.display = "block";
-    el.textContent = out;
-
-    logActivity("당근 소식 초안 생성" + (newsPhotos.length ? ` (사진 ${newsPhotos.length}장)` : ""));
 }
 
 function generateReview(){
