@@ -1323,7 +1323,6 @@ textarea:focus{
                         </select>
                     </div>
                     <div><label>청소 상태</label><input id="condition" placeholder="예: 곰팡이와 냄새가 심한 상태"></div>
-                    <div><label>작업 방식</label><input id="method" placeholder="예: 완전분해 세척"></div>
                     <div class="full">
                         <label>실제 작업 후기 / 특이사항</label>
                         <textarea id="story" placeholder="실제 있었던 작업 내용을 적어주세요."></textarea>
@@ -1407,6 +1406,7 @@ textarea:focus{
                 </div>
 
                 <div class="ai-toolbar">
+                    <button class="btn btn-light" onclick="clearReviewForm()">🔄 새로고침 (다음 후기 작성)</button>
                     <button class="btn btn-primary" onclick="generateReview()">✨ 답변 만들기</button>
                 </div>
 
@@ -2495,12 +2495,13 @@ function renderBlogPhotos(){
     `).join("");
 }
 
+const WORK_METHOD = "완전분해 세척";
+
 function collectBlogInput(){
     return {
         region: document.getElementById("region").value || "우리 동네",
         type: document.getElementById("type").value,
         condition: document.getElementById("condition").value || "내부 오염이 의심되는 상태",
-        method: document.getElementById("method").value || "분해 세척",
         story: document.getElementById("story").value || "",
         photoLine: blogPhotos.length
             ? `\n📷 첨부 사진 ${blogPhotos.length}장 선택됨 — 아래 순서대로 본문에 배치해주세요.\n${blogPhotos.map((p,i) => `  ${i+1}. ${p.name}`).join("\n")}\n`
@@ -2509,15 +2510,15 @@ function collectBlogInput(){
 }
 
 function buildNaverBlogDraft(input){
-    const { region, type, condition, method, story, photoLine } = input;
+    const { region, type, condition, story, photoLine } = input;
     return (
 `제목
-${region} ${type} ${method} 청소 후기｜에어컨 냄새와 오염 상태 점검부터 세척까지
+${region} ${type} ${WORK_METHOD} 청소 후기｜에어컨 냄새와 오염 상태 점검부터 세척까지
 
 본문 초안
 오늘은 ${region}에서 ${type} 청소 작업을 진행했습니다.
 
-고객님께서는 ${condition} 때문에 청소를 요청해 주셨습니다. 먼저 에어컨 내부 상태를 확인한 뒤 ${method} 방식으로 작업을 진행했습니다.
+고객님께서는 ${condition} 때문에 청소를 요청해 주셨습니다. 먼저 에어컨 내부 상태를 확인한 뒤 ${WORK_METHOD} 방식으로 작업을 진행했습니다.
 
 이번 작업의 실제 특이사항은 다음과 같습니다.
 ${story || "(작업 특이사항을 입력하면 이 자리에 반영됩니다.)"}
@@ -2529,11 +2530,11 @@ ${photoLine}
 }
 
 function buildSmartplaceDraft(input){
-    const { region, type, condition, method, story } = input;
+    const { region, type, condition, story } = input;
     return (
 `[${region} ${type} 청소 작업 안내]
 
-${type} 내부 ${condition}(으)로 ${method} 작업을 진행했습니다.
+${type} 내부 ${condition}(으)로 ${WORK_METHOD} 작업을 진행했습니다.
 ${story ? `\n${story}\n` : ""}
 꼼꼼한 분해 세척으로 냄새와 오염을 관리해 드립니다. 방문 상담 및 예약 문의 환영합니다.
 
@@ -2794,6 +2795,17 @@ ${s.includes("친절") ? "서비스 과정에서 만족하셨다니 정말 다�
     el.textContent = out;
 
     logActivity("AI 리뷰 답변 생성");
+}
+
+function clearReviewForm(){
+    const text = document.getElementById("reviewText");
+    text.value = "";
+
+    const el = document.getElementById("reviewResult");
+    el.style.display = "none";
+    el.textContent = "";
+
+    text.focus();
 }
 
 /* =========================
