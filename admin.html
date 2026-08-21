@@ -1399,6 +1399,7 @@ textarea:focus{
                 <div class="panel-sub">고객 리뷰를 입력하면 자연스러운 답변 초안을 만들어 줍니다.</div>
 
                 <div class="ai-form">
+                    <div><label>고객 닉네임/아이디 (선택)</label><input id="reviewerName" placeholder="예: 물금맘, ab12** 등 리뷰에 표시된 이름"></div>
                     <div class="full">
                         <label>고객 리뷰 원문</label>
                         <textarea id="reviewText" placeholder="예: 기사님이 친절하시고 에어컨 냄새도 많이 없어졌어요. 다음에도 이용할게요."></textarea>
@@ -2780,15 +2781,125 @@ ${d} 방문 일정에 여유가 있습니다.
     logActivity("AI 홍보 문구 생성");
 }
 
+/* 리뷰 답변 문장 뱅크 — 매번 같은 문장이 나오지 않도록 인사말/공감/본문/마무리를
+   각각 여러 버전 중에서 고르고, 바로 직전에 썼던 문장은 같은 자리에서 다시 고르지 않는다. */
+
+const REVIEW_TEMPLATES = {
+    greetings: [
+        "소중한 후기 남겨주셔서 감사합니다 😊",
+        "후기 정성스럽게 남겨주셔서 정말 감사드려요 😊",
+        "이렇게 후기까지 남겨주셔서 감사합니다!",
+        "소중한 시간 내어 후기 남겨주셔서 감사합니다 🙏",
+        "따뜻한 후기 남겨주셔서 감사합니다 😊"
+    ],
+    keywordAck: {
+        "친절": [
+            "기사님이 친절하게 응대해드렸다니 정말 다행입니다.",
+            "친절하게 작업해드렸다는 말씀에 저희도 기쁩니다.",
+            "편안하게 느끼셨다니 다행이에요."
+        ],
+        "냄새": [
+            "냄새까지 깔끔하게 해결되었다니 다행입니다.",
+            "묵은 냄새가 사라졌다니 저희도 뿌듯하네요.",
+            "냄새 걱정 없이 사용하실 수 있게 되어 다행입니다."
+        ],
+        "깨끗": [
+            "에어컨이 깨끗해졌다는 말씀에 저희도 뿌듯합니다.",
+            "말끔해진 상태를 보고 만족해주셔서 감사해요.",
+            "깨끗하게 관리해드릴 수 있어 저희도 좋았습니다."
+        ],
+        "빠르": [
+            "빠르게 작업이 마무리되어 다행입니다.",
+            "신속하게 진행해드릴 수 있어 저희도 좋았습니다."
+        ],
+        "꼼꼼": [
+            "꼼꼼하게 봐드린 점을 알아봐주셔서 감사합니다.",
+            "세심하게 확인하며 작업한 보람이 있네요."
+        ],
+        "가격": [
+            "가격까지 만족해주셨다니 다행입니다.",
+            "합리적인 가격으로 느끼셨다니 감사합니다."
+        ],
+        "다음에도": [
+            "다음에도 찾아주신다니 정말 든든합니다.",
+            "또 이용해주신다는 말씀이 큰 힘이 됩니다."
+        ]
+    },
+    genericAck: [
+        "편하게 이용하실 수 있었다니 저희도 기쁩니다.",
+        "만족스러운 경험이셨다니 다행입니다.",
+        "좋은 기억으로 남으셨다니 감사할 따름입니다."
+    ],
+    customerPraise: [
+        "이렇게 꼼꼼하게 후기 남겨주시는 고객님 덕분에 저희도 많이 배웁니다.",
+        "정성스러운 후기 덕분에 저희 팀도 큰 힘이 납니다.",
+        "고객님처럼 따뜻하게 챙겨봐주시는 분들 덕분에 더 열심히 하게 됩니다.",
+        "바쁘신 와중에도 후기 남겨주시는 마음이 참 감사합니다.",
+        "고객님 같은 분이 계셔서 저희가 이 일을 계속할 힘이 생깁니다."
+    ],
+    bodies: [
+        "앞으로도 고객님께서 안심하고 사용하실 수 있도록 꼼꼼하게 작업하겠습니다.",
+        "앞으로도 한 대 한 대 정성을 다해 작업하겠습니다.",
+        "다음에도 믿고 맡기실 수 있도록 계속 노력하겠습니다.",
+        "고객님 댁 에어컨, 항상 책임감 있게 관리해드리겠습니다."
+    ],
+    closings: [
+        "다음에 에어컨 청소가 필요하실 때도 편하게 찾아주세요. 감사합니다!",
+        "필요하실 때 언제든 편하게 연락 주세요. 감사합니다!",
+        "다음 시즌에도 팡이케어가 함께하겠습니다. 감사합니다!",
+        "이웃분들께도 많이 추천해주세요 :) 감사합니다!"
+    ]
+};
+
+let reviewLastPick = { greeting: -1, body: -1, closing: -1, ack: -1, praise: -1 };
+
+function pickVariant(list, lastIndex){
+    if(list.length === 1) return { text: list[0], index: 0 };
+
+    let index;
+    do{
+        index = Math.floor(Math.random() * list.length);
+    }while(index === lastIndex);
+
+    return { text: list[index], index };
+}
+
+function buildReviewReply(reviewText, reviewerName){
+    const matchedKeywords = Object.keys(REVIEW_TEMPLATES.keywordAck).filter(k => reviewText.includes(k));
+
+    const greeting = pickVariant(REVIEW_TEMPLATES.greetings, reviewLastPick.greeting);
+    reviewLastPick.greeting = greeting.index;
+    const greetingText = reviewerName ? `${reviewerName}님, ${greeting.text}` : greeting.text;
+
+    let ackLine;
+    if(matchedKeywords.length){
+        ackLine = matchedKeywords.slice(0, 2).map(k => {
+            const pool = REVIEW_TEMPLATES.keywordAck[k];
+            return pool[Math.floor(Math.random() * pool.length)];
+        }).join(" ");
+    }else{
+        const ack = pickVariant(REVIEW_TEMPLATES.genericAck, reviewLastPick.ack);
+        reviewLastPick.ack = ack.index;
+        ackLine = ack.text;
+    }
+
+    const praise = pickVariant(REVIEW_TEMPLATES.customerPraise, reviewLastPick.praise);
+    reviewLastPick.praise = praise.index;
+    ackLine = `${ackLine} ${praise.text}`;
+
+    const body = pickVariant(REVIEW_TEMPLATES.bodies, reviewLastPick.body);
+    reviewLastPick.body = body.index;
+
+    const closing = pickVariant(REVIEW_TEMPLATES.closings, reviewLastPick.closing);
+    reviewLastPick.closing = closing.index;
+
+    return `${greetingText}\n\n${ackLine}\n\n${body.text} ${closing.text}`;
+}
+
 function generateReview(){
     const s = document.getElementById("reviewText").value || "";
-
-    const out =
-`소중한 후기 남겨주셔서 감사합니다 😊
-
-${s.includes("친절") ? "서비스 과정에서 만족하셨다니 정말 다행입니다. " : ""}편하게 이용하실 수 있었다니 저희도 기쁩니다.
-
-앞으로도 고객님께서 안심하고 사용하실 수 있도록 꼼꼼하게 작업하겠습니다. 다음에 에어컨 청소가 필요하실 때도 편하게 찾아주세요. 감사합니다!`;
+    const reviewerName = document.getElementById("reviewerName").value.trim();
+    const out = buildReviewReply(s, reviewerName);
 
     const el = document.getElementById("reviewResult");
     el.style.display = "block";
@@ -2798,6 +2909,8 @@ ${s.includes("친절") ? "서비스 과정에서 만족하셨다니 정말 다�
 }
 
 function clearReviewForm(){
+    document.getElementById("reviewerName").value = "";
+
     const text = document.getElementById("reviewText");
     text.value = "";
 
