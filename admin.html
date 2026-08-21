@@ -1328,13 +1328,21 @@ textarea:focus{
                         <textarea id="story" placeholder="실제 있었던 작업 내용을 적어주세요."></textarea>
                     </div>
 
-                    <div class="full">
-                        <label>사진 첨부</label>
-                        <label class="photo-picker" for="blogPhotoInput">
-                            <span>📷 클릭해서 작업 사진을 선택하세요 (여러 장 가능)</span>
-                            <input type="file" id="blogPhotoInput" accept="image/*" multiple onchange="handleBlogPhotos(event)">
+                    <div>
+                        <label>세척 전 사진</label>
+                        <label class="photo-picker" for="blogPhotoInputBefore">
+                            <span>📷 클릭해서 세척 전 사진을 선택하세요 (여러 장 가능)</span>
+                            <input type="file" id="blogPhotoInputBefore" accept="image/*" multiple onchange="handleBlogPhotos(event, 'before')">
                         </label>
-                        <div class="photo-grid" id="blogPhotoGrid"></div>
+                        <div class="photo-grid" id="blogPhotoGridBefore"></div>
+                    </div>
+                    <div>
+                        <label>세척 후 사진</label>
+                        <label class="photo-picker" for="blogPhotoInputAfter">
+                            <span>📷 클릭해서 세척 후 사진을 선택하세요 (여러 장 가능)</span>
+                            <input type="file" id="blogPhotoInputAfter" accept="image/*" multiple onchange="handleBlogPhotos(event, 'after')">
+                        </label>
+                        <div class="photo-grid" id="blogPhotoGridAfter"></div>
                     </div>
                 </div>
 
@@ -2465,35 +2473,52 @@ function downloadBAImage(){
     link.click();
 }
 
-/* 블로그 사진 첨부 — 서버에 업로드하지 않고, 이 브라우저 화면에서만 미리보기로 보여줍니다. */
+/* 블로그 사진 첨부 — 세척 전/후로 구분해서 관리. 서버에 업로드하지 않고, 이 브라우저 화면에서만 미리보기로 보여줍니다. */
 
-let blogPhotos = [];
+let blogPhotos = { before: [], after: [] };
 
-function handleBlogPhotos(event){
+function handleBlogPhotos(event, group){
     const files = Array.from(event.target.files || []);
 
     files.forEach(file => {
-        blogPhotos.push({ url: URL.createObjectURL(file), name: file.name });
+        blogPhotos[group].push({ url: URL.createObjectURL(file), name: file.name });
     });
 
     event.target.value = "";
-    renderBlogPhotos();
+    renderBlogPhotos(group);
 }
 
-function removeBlogPhoto(index){
-    URL.revokeObjectURL(blogPhotos[index].url);
-    blogPhotos.splice(index, 1);
-    renderBlogPhotos();
+function removeBlogPhoto(group, index){
+    URL.revokeObjectURL(blogPhotos[group][index].url);
+    blogPhotos[group].splice(index, 1);
+    renderBlogPhotos(group);
 }
 
-function renderBlogPhotos(){
-    const grid = document.getElementById("blogPhotoGrid");
-    grid.innerHTML = blogPhotos.map((p, i) => `
+function renderBlogPhotos(group){
+    const grid = document.getElementById(group === "before" ? "blogPhotoGridBefore" : "blogPhotoGridAfter");
+    grid.innerHTML = blogPhotos[group].map((p, i) => `
         <div class="photo-thumb">
             <img src="${p.url}" alt="${p.name}">
-            <button type="button" onclick="removeBlogPhoto(${i})" title="삭제">×</button>
+            <button type="button" onclick="removeBlogPhoto('${group}', ${i})" title="삭제">×</button>
         </div>
     `).join("");
+}
+
+function blogPhotoTotal(){
+    return blogPhotos.before.length + blogPhotos.after.length;
+}
+
+function buildBlogPhotoLine(){
+    const parts = [];
+    if(blogPhotos.before.length){
+        parts.push(`📷 세척 전 사진 ${blogPhotos.before.length}장 — ${blogPhotos.before.map(p => p.name).join(", ")}`);
+    }
+    if(blogPhotos.after.length){
+        parts.push(`📷 세척 후 사진 ${blogPhotos.after.length}장 — ${blogPhotos.after.map(p => p.name).join(", ")}`);
+    }
+    return parts.length
+        ? `\n${parts.join("\n")}\n(세척 전/후 사진을 구분해서 본문에 배치해주세요.)\n`
+        : "";
 }
 
 const WORK_METHOD = "완전분해 세척";
@@ -2504,9 +2529,7 @@ function collectBlogInput(){
         type: document.getElementById("type").value,
         condition: document.getElementById("condition").value || "내부 오염이 의심되는 상태",
         story: document.getElementById("story").value || "",
-        photoLine: blogPhotos.length
-            ? `\n📷 첨부 사진 ${blogPhotos.length}장 선택됨 — 아래 순서대로 본문에 배치해주세요.\n${blogPhotos.map((p,i) => `  ${i+1}. ${p.name}`).join("\n")}\n`
-            : ""
+        photoLine: buildBlogPhotoLine()
     };
 }
 
@@ -2572,7 +2595,7 @@ function generateBlog(){
         el.textContent = buildNaverBlogDraft(input);
     }
 
-    logActivity("AI 블로그 초안 생성" + (blogPhotos.length ? ` (사진 ${blogPhotos.length}장)` : ""));
+    logActivity("AI 블로그 초안 생성" + (blogPhotoTotal() ? ` (사진 ${blogPhotoTotal()}장)` : ""));
 }
 
 /* =========================
