@@ -2772,6 +2772,11 @@ function generateBlog(){
 }
 
 function clearBlogForm(){
+    const queue = getPublishQueue();
+    if(queue.length && !confirm("입력값과 함께 아래 3채널 발행 목록도 전부 삭제할까요? (승인 여부와 상관없이 전체 삭제됩니다)")){
+        return;
+    }
+
     document.getElementById("region").value = "";
     document.getElementById("type").selectedIndex = 0;
     document.getElementById("condition").value = "";
@@ -2786,6 +2791,9 @@ function clearBlogForm(){
     const el = document.getElementById("blogResult");
     el.style.display = "none";
     el.textContent = "";
+
+    savePublishQueue([]);
+    renderPublishQueue();
 
     document.getElementById("region").focus();
 }
