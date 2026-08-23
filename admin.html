@@ -2777,12 +2777,26 @@ async function promoMusicDbLoadAll(){
 }
 
 // promovideo 화면을 처음 열 때 한 번만 저장된 음악을 불러와 목록에 반영
+// 같은 파일이 두 번 저장되지 않게 판별하는 기준 — 파일명 + 용량이 같으면 같은 파일로 취급
+function promoMusicDedupeKey(label, size){
+    return label + "::" + size;
+}
+
 async function ensurePromoMusicLoaded(){
     if (promoMusicLoadedFromDb) return;
     promoMusicLoadedFromDb = true;
 
     const stored = await promoMusicDbLoadAll();
+    const seen = new Set();
+
     stored.forEach(rec => {
+        const key = promoMusicDedupeKey(rec.label, rec.blob ? rec.blob.size : 0);
+        if (seen.has(key)){
+            // 이전에 중복 저장됐던 것 — 이번에 발견한 김에 저장소에서도 정리
+            promoMusicDbDelete(rec.id);
+            return;
+        }
+        seen.add(key);
         promoCustomTracks.push({
             id: rec.id,
             label: rec.label,
@@ -2792,7 +2806,7 @@ async function ensurePromoMusicLoaded(){
         });
     });
 
-    if (stored.length){
+    if (promoCustomTracks.length){
         populatePromoMusicSelect(true);
         renderPromoMusicUploadList();
     }
@@ -2826,7 +2840,15 @@ function populatePromoMusicSelect(forceRefresh){
 
 function handlePromoMusicUpload(event){
     const files = Array.from(event.target.files || []);
+    const skipped = [];
+
     files.forEach(file => {
+        const key = promoMusicDedupeKey(file.name, file.size);
+        const alreadyExists = promoCustomTracks.some(t => promoMusicDedupeKey(t.label, t.blob ? t.blob.size : -1) === key);
+        if (alreadyExists){
+            skipped.push(file.name);
+            return;
+        }
         const id = "custom-" + Date.now() + "-" + Math.random().toString(36).slice(2, 7);
         const track = { id, label: file.name, name: "🎵 " + file.name + " (저장된 음악)", url: URL.createObjectURL(file), blob: file };
         promoCustomTracks.push(track);
@@ -2835,6 +2857,10 @@ function handlePromoMusicUpload(event){
     event.target.value = "";
     populatePromoMusicSelect(true);
     renderPromoMusicUploadList();
+
+    if (skipped.length){
+        alert("이미 등록된 음악이라 다시 올리지 않았어요: " + skipped.join(", "));
+    }
 
     // 방금 올린 곡을 바로 선택 상태로 (마지막에 추가된 파일)
     const sel = document.getElementById("promoMusic");
