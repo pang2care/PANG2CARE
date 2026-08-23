@@ -1546,6 +1546,15 @@ textarea:focus{
                         <label>배경음악</label>
                         <select id="promoMusic"></select>
                     </div>
+
+                    <div class="full">
+                        <label>배경음악 직접 올리기 (선택, 저작권 확인된 파일만)</label>
+                        <label class="photo-picker" for="promoMusicUpload">
+                            <span>🎵 클릭해서 배경음악 파일을 선택하세요 (mp3 등, 여러 개 가능)</span>
+                            <input type="file" id="promoMusicUpload" accept="audio/*" multiple onchange="handlePromoMusicUpload(event)">
+                        </label>
+                        <div id="promoMusicUploadList" class="ai-note"></div>
+                    </div>
                 </div>
 
                 <div class="ai-toolbar">
@@ -2701,6 +2710,10 @@ const PROMO_BENEFIT_CAPTIONS = [
 const promoPhotos = { before: [], after: [] };
 let promoLastPick = { before: -1, after: -1 };
 
+/* 관리자가 이 브라우저에서 직접 올린 배경음악 — 서버에 업로드되지 않고 이 탭에만 존재.
+   MUSIC_TRACKS(기본 제공 음악)와 합쳐서 같은 드롭다운에 표시됨. */
+const promoCustomTracks = [];
+
 function promoPickCaption(kind){
     const list = kind === "before" ? PROMO_PROBLEM_CAPTIONS : PROMO_BENEFIT_CAPTIONS;
     let index;
@@ -2711,10 +2724,59 @@ function promoPickCaption(kind){
     return list[index];
 }
 
-function populatePromoMusicSelect(){
+function populatePromoMusicSelect(forceRefresh){
     const sel = document.getElementById("promoMusic");
-    if(!sel || sel.options.length) return;
-    sel.innerHTML = MUSIC_TRACKS.map(t => `<option value="${t.id}">${t.name}</option>`).join("");
+    if(!sel) return;
+    if (sel.options.length && !forceRefresh) return;
+
+    const prevValue = sel.value;
+    const builtinHtml = MUSIC_TRACKS.map(t => `<option value="${t.id}">${t.name}</option>`).join("");
+    const customHtml = promoCustomTracks.map(t => `<option value="${t.id}">${t.name}</option>`).join("");
+    sel.innerHTML = builtinHtml + customHtml;
+
+    // 기존에 고르셨던 곡이 목록에 그대로 남아있으면 선택을 유지 (없어졌으면 첫 곡으로 자동 이동)
+    if (prevValue && Array.from(sel.options).some(o => o.value === prevValue)){
+        sel.value = prevValue;
+    }
+}
+
+function handlePromoMusicUpload(event){
+    const files = Array.from(event.target.files || []);
+    files.forEach(file => {
+        const id = "custom-" + Date.now() + "-" + Math.random().toString(36).slice(2, 7);
+        promoCustomTracks.push({ id, label: file.name, name: "🎵 " + file.name + " (직접 올림)", url: URL.createObjectURL(file) });
+    });
+    event.target.value = "";
+    populatePromoMusicSelect(true);
+    renderPromoMusicUploadList();
+
+    // 방금 올린 곡을 바로 선택 상태로 (마지막에 추가된 파일)
+    const sel = document.getElementById("promoMusic");
+    if (sel && promoCustomTracks.length) sel.value = promoCustomTracks[promoCustomTracks.length - 1].id;
+}
+
+function removePromoCustomTrack(index){
+    URL.revokeObjectURL(promoCustomTracks[index].url);
+    promoCustomTracks.splice(index, 1);
+    populatePromoMusicSelect(true);
+    renderPromoMusicUploadList();
+}
+
+function renderPromoMusicUploadList(){
+    const wrap = document.getElementById("promoMusicUploadList");
+    if(!wrap) return;
+    if(!promoCustomTracks.length){ wrap.innerHTML = ""; return; }
+    wrap.innerHTML = "올린 음악: " + promoCustomTracks.map((t, i) => `
+        <span style="display:inline-flex;align-items:center;gap:4px;margin-right:10px;">
+            ${t.label}
+            <button type="button" onclick="removePromoCustomTrack(${i})" title="삭제"
+                style="border:0;background:#edf1f3;border-radius:50%;width:16px;height:16px;font-size:10px;line-height:1;cursor:pointer;">×</button>
+        </span>
+    `).join("");
+}
+
+function promoResolveTrack(trackId){
+    return MUSIC_TRACKS.find(t => t.id === trackId) || promoCustomTracks.find(t => t.id === trackId) || MUSIC_TRACKS[0];
 }
 
 function handlePromoPhotos(event, kind){
@@ -2756,8 +2818,18 @@ function clearPromoVideoForm(){
     promoPhotos.after.forEach(p => URL.revokeObjectURL(p.url));
     promoPhotos.before = [];
     promoPhotos.after = [];
+    promoLastPick = { before: -1, after: -1 };
     renderPromoGrid("before");
     renderPromoGrid("after");
+
+    // 직전에 만든 영상 미리보기도 정리 (배경음악 업로드 목록은 다음 영상에도 이어 쓸 수 있게 그대로 둠)
+    const video = document.getElementById("promoPreviewVideo");
+    if (video.src){
+        URL.revokeObjectURL(video.src);
+        video.removeAttribute("src");
+        video.load();
+    }
+
     document.getElementById("promoResultWrap").style.display = "none";
     document.getElementById("promoProgress").style.display = "none";
 }
@@ -2970,7 +3042,7 @@ async function generatePromoVideo(mode){
         const brandRegion = settings.region ? settings.region + " " : "";
 
         const trackId = document.getElementById("promoMusic").value;
-        const track = MUSIC_TRACKS.find(t => t.id === trackId) || MUSIC_TRACKS[0];
+        const track = promoResolveTrack(trackId);
 
         // 브라우저는 <audio> 엘리먼트 하나당 createMediaElementSource()를 딱 한 번만 허용하므로,
         // 두 번째 영상(세로→가로 등)을 만들 때 같은 엘리먼트를 재사용하면 오류가 남 —
@@ -2978,7 +3050,7 @@ async function generatePromoVideo(mode){
         const prevAudioEl = document.getElementById("promoAudioEl");
         const audioEl = prevAudioEl.cloneNode(false);
         prevAudioEl.parentNode.replaceChild(audioEl, prevAudioEl);
-        audioEl.src = track.file;
+        audioEl.src = track.url || track.file; // 직접 올린 곡은 .url(브라우저 내 임시 주소), 기본 제공 곡은 .file(프로젝트 경로)
         audioEl.loop = true;
         audioEl.currentTime = 0;
 
