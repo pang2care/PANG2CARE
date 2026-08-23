@@ -1548,7 +1548,7 @@ textarea:focus{
                     </div>
 
                     <div class="full">
-                        <label>배경음악 직접 올리기 (선택, 저작권 확인된 파일만)</label>
+                        <label>배경음악 직접 올리기 (선택, 저작권 확인된 파일만 — 이 브라우저에 저장되어 다음에 다시 안 올려도 됩니다)</label>
                         <label class="photo-picker" for="promoMusicUpload">
                             <span>🎵 클릭해서 배경음악 파일을 선택하세요 (mp3 등, 여러 개 가능)</span>
                             <input type="file" id="promoMusicUpload" accept="audio/*" multiple onchange="handlePromoMusicUpload(event)">
@@ -1862,7 +1862,7 @@ function openView(id){
     if(id === "settings") fillSettingsForm();
     if(id === "blog" || id === "content") prefillAiForms();
     if(id === "blog"){ updateBlogModeUI(); renderPublishQueue(); }
-    if(id === "promovideo") populatePromoMusicSelect();
+    if(id === "promovideo"){ populatePromoMusicSelect(); ensurePromoMusicLoaded(); }
 }
 
 /* =========================
@@ -2710,9 +2710,93 @@ const PROMO_BENEFIT_CAPTIONS = [
 const promoPhotos = { before: [], after: [] };
 let promoLastPick = { before: -1, after: -1 };
 
-/* 관리자가 이 브라우저에서 직접 올린 배경음악 — 서버에 업로드되지 않고 이 탭에만 존재.
-   MUSIC_TRACKS(기본 제공 음악)와 합쳐서 같은 드롭다운에 표시됨. */
+/* 관리자가 이 브라우저에서 직접 올린 배경음악 — 서버에는 업로드되지 않고 이 브라우저의
+   IndexedDB에 영구 저장됨 (새로고침·재접속해도 유지). MUSIC_TRACKS(기본 제공 음악)와
+   합쳐서 같은 드롭다운에 표시됨. */
 const promoCustomTracks = [];
+
+const PROMO_MUSIC_DB_NAME = "pangicarePromoMusicDB";
+const PROMO_MUSIC_DB_STORE = "tracks";
+let promoMusicDbPromise = null;
+let promoMusicLoadedFromDb = false;
+
+function openPromoMusicDB(){
+    if (promoMusicDbPromise) return promoMusicDbPromise;
+    promoMusicDbPromise = new Promise((resolve, reject) => {
+        const req = indexedDB.open(PROMO_MUSIC_DB_NAME, 1);
+        req.onupgradeneeded = () => {
+            req.result.createObjectStore(PROMO_MUSIC_DB_STORE, { keyPath: "id" });
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+    });
+    return promoMusicDbPromise;
+}
+
+async function promoMusicDbSave(track){
+    try{
+        const db = await openPromoMusicDB();
+        await new Promise((resolve, reject) => {
+            const tx = db.transaction(PROMO_MUSIC_DB_STORE, "readwrite");
+            tx.objectStore(PROMO_MUSIC_DB_STORE).put({ id: track.id, label: track.label, blob: track.blob });
+            tx.oncomplete = resolve;
+            tx.onerror = () => reject(tx.error);
+        });
+    }catch(err){
+        console.error("배경음악 저장 실패:", err);
+    }
+}
+
+async function promoMusicDbDelete(id){
+    try{
+        const db = await openPromoMusicDB();
+        await new Promise((resolve, reject) => {
+            const tx = db.transaction(PROMO_MUSIC_DB_STORE, "readwrite");
+            tx.objectStore(PROMO_MUSIC_DB_STORE).delete(id);
+            tx.oncomplete = resolve;
+            tx.onerror = () => reject(tx.error);
+        });
+    }catch(err){
+        console.error("배경음악 삭제 실패:", err);
+    }
+}
+
+async function promoMusicDbLoadAll(){
+    try{
+        const db = await openPromoMusicDB();
+        return await new Promise((resolve, reject) => {
+            const tx = db.transaction(PROMO_MUSIC_DB_STORE, "readonly");
+            const req = tx.objectStore(PROMO_MUSIC_DB_STORE).getAll();
+            req.onsuccess = () => resolve(req.result || []);
+            req.onerror = () => reject(req.error);
+        });
+    }catch(err){
+        console.error("배경음악 불러오기 실패:", err);
+        return [];
+    }
+}
+
+// promovideo 화면을 처음 열 때 한 번만 저장된 음악을 불러와 목록에 반영
+async function ensurePromoMusicLoaded(){
+    if (promoMusicLoadedFromDb) return;
+    promoMusicLoadedFromDb = true;
+
+    const stored = await promoMusicDbLoadAll();
+    stored.forEach(rec => {
+        promoCustomTracks.push({
+            id: rec.id,
+            label: rec.label,
+            name: "🎵 " + rec.label + " (저장된 음악)",
+            url: URL.createObjectURL(rec.blob),
+            blob: rec.blob
+        });
+    });
+
+    if (stored.length){
+        populatePromoMusicSelect(true);
+        renderPromoMusicUploadList();
+    }
+}
 
 function promoPickCaption(kind){
     const list = kind === "before" ? PROMO_PROBLEM_CAPTIONS : PROMO_BENEFIT_CAPTIONS;
@@ -2744,7 +2828,9 @@ function handlePromoMusicUpload(event){
     const files = Array.from(event.target.files || []);
     files.forEach(file => {
         const id = "custom-" + Date.now() + "-" + Math.random().toString(36).slice(2, 7);
-        promoCustomTracks.push({ id, label: file.name, name: "🎵 " + file.name + " (직접 올림)", url: URL.createObjectURL(file) });
+        const track = { id, label: file.name, name: "🎵 " + file.name + " (저장된 음악)", url: URL.createObjectURL(file), blob: file };
+        promoCustomTracks.push(track);
+        promoMusicDbSave(track); // 이 브라우저에 영구 저장 (완료를 기다리지 않고 목록엔 바로 반영)
     });
     event.target.value = "";
     populatePromoMusicSelect(true);
@@ -2756,8 +2842,10 @@ function handlePromoMusicUpload(event){
 }
 
 function removePromoCustomTrack(index){
-    URL.revokeObjectURL(promoCustomTracks[index].url);
+    const track = promoCustomTracks[index];
+    URL.revokeObjectURL(track.url);
     promoCustomTracks.splice(index, 1);
+    promoMusicDbDelete(track.id);
     populatePromoMusicSelect(true);
     renderPromoMusicUploadList();
 }
