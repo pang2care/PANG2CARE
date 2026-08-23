@@ -431,6 +431,71 @@ body{
     cursor:pointer;
 }
 
+.btn:disabled{
+    opacity:.55;
+    cursor:not-allowed;
+}
+
+/* =========================
+   홍보 영상 만들기 (사진 + 자막 + 배경음악)
+========================= */
+
+.promo-photo-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
+    gap:12px;
+    margin-top:12px;
+}
+
+.promo-photo-card{
+    position:relative;
+    border:1px solid #e6ebf2;
+    border-radius:10px;
+    overflow:hidden;
+    background:#fbfcfe;
+}
+
+.promo-photo-card img{
+    width:100%;
+    aspect-ratio:1/1;
+    object-fit:cover;
+    display:block;
+}
+
+.promo-photo-card textarea{
+    width:100%;
+    border:0;
+    border-top:1px solid #e6ebf2;
+    padding:8px;
+    font-family:inherit;
+    font-size:11px;
+    line-height:1.5;
+    resize:vertical;
+    min-height:56px;
+    outline:none;
+}
+
+.promo-photo-card textarea:focus{
+    background:#f3fbfb;
+}
+
+.promo-photo-card button.remove{
+    position:absolute;
+    top:4px;
+    right:4px;
+    width:20px;
+    height:20px;
+    border:0;
+    border-radius:50%;
+    background:rgba(0,0,0,.55);
+    color:#fff;
+    font-size:12px;
+    line-height:20px;
+    text-align:center;
+    padding:0;
+    cursor:pointer;
+}
+
 /* =========================
    3채널 발행 목록
 ========================= */
@@ -1150,6 +1215,7 @@ textarea:focus{
             <button data-view="beforeafter">🖼️ 전후사진 만들기</button>
             <button data-view="blog">✍️ AI 블로그 작성</button>
             <button data-view="content">📣 홍보 콘텐츠</button>
+            <button data-view="promovideo">🎬 홍보 영상 만들기</button>
             <button data-view="review">⭐ 리뷰 답변</button>
         </div>
 
@@ -1450,6 +1516,61 @@ textarea:focus{
         </section>
 
 
+        <!-- VIEW: 홍보 영상 만들기 -->
+
+        <section id="view-promovideo" class="view">
+            <div class="panel">
+                <h2>🎬 홍보 영상 만들기</h2>
+                <div class="panel-sub">세척 전/후 사진을 올리면 자막과 배경음악을 넣어 홍보용 영상으로 만들어 드립니다. 세척 전 사진에는 오염 문제를, 세척 후 사진에는 청소 효과를 자동으로 강조하는 자막이 붙어요. (자막은 자유롭게 수정할 수 있어요)</div>
+
+                <div class="ai-form">
+                    <div>
+                        <label>세척 전 사진 (오염 문제 강조)</label>
+                        <label class="photo-picker" for="promoPhotoInputBefore">
+                            <span>📷 클릭해서 세척 전 사진을 선택하세요 (여러 장 가능)</span>
+                            <input type="file" id="promoPhotoInputBefore" accept="image/*" multiple onchange="handlePromoPhotos(event,'before')">
+                        </label>
+                        <div class="promo-photo-grid" id="promoGridBefore"></div>
+                    </div>
+
+                    <div>
+                        <label>세척 후 사진 (청소 효과 강조)</label>
+                        <label class="photo-picker" for="promoPhotoInputAfter">
+                            <span>📷 클릭해서 세척 후 사진을 선택하세요 (여러 장 가능)</span>
+                            <input type="file" id="promoPhotoInputAfter" accept="image/*" multiple onchange="handlePromoPhotos(event,'after')">
+                        </label>
+                        <div class="promo-photo-grid" id="promoGridAfter"></div>
+                    </div>
+
+                    <div class="full">
+                        <label>배경음악</label>
+                        <select id="promoMusic"></select>
+                    </div>
+                </div>
+
+                <div class="ai-toolbar">
+                    <button class="btn btn-light" onclick="clearPromoVideoForm()">🔄 새로고침</button>
+                    <button class="btn btn-primary" id="promoVerticalBtn" onclick="generatePromoVideo('vertical')">📱 세로 영상 만들기 (9:16)</button>
+                    <button class="btn btn-primary" id="promoHorizontalBtn" onclick="generatePromoVideo('horizontal')">🖥️ 가로 영상 만들기 (16:9)</button>
+                </div>
+
+                <div id="promoProgress" class="ai-note" style="display:none;"></div>
+
+                <canvas id="promoCanvas" style="display:none;"></canvas>
+                <audio id="promoAudioEl" preload="none" style="display:none;"></audio>
+
+                <div id="promoResultWrap" style="display:none;margin-top:16px;">
+                    <video id="promoPreviewVideo" controls style="width:100%;max-width:360px;display:block;border-radius:12px;box-shadow:0 3px 15px rgba(0,0,0,.1);margin:0 auto;background:#000;"></video>
+                    <div class="ai-toolbar" style="justify-content:center;margin-top:14px;">
+                        <button class="btn btn-primary" id="promoDownloadBtn">⬇️ 영상 다운로드</button>
+                    </div>
+                </div>
+
+                <div class="ai-note">※ 사진과 음악은 서버에 업로드되지 않고 이 브라우저 안에서만 영상으로 합성됩니다. 상단 띠에 팡이케어·서비스(에어컨청소·냉매보충)·홈페이지 주소가 항상 표시됩니다 — 다만 영상 파일 자체는 클릭 이동이 되지 않으니, 실제 게시할 때는 게시글 설명란에 홈페이지 링크를 함께 붙여주세요. 영상은 .webm 파일로 저장되며, 일부 플랫폼(인스타그램 등)은 업로드 전 mp4 변환이 필요할 수 있습니다. 영상 생성에는 영상 길이만큼 시간이 걸리니 완료될 때까지 이 탭을 유지해주세요.</div>
+            </div>
+        </section>
+
+
         <!-- VIEW: 리뷰 답변 -->
 
         <section id="view-review" class="view">
@@ -1732,6 +1853,7 @@ function openView(id){
     if(id === "settings") fillSettingsForm();
     if(id === "blog" || id === "content") prefillAiForms();
     if(id === "blog"){ updateBlogModeUI(); renderPublishQueue(); }
+    if(id === "promovideo") populatePromoMusicSelect();
 }
 
 /* =========================
@@ -2540,6 +2662,415 @@ function downloadBAImage(){
     link.download = getBAType().filename;
     link.href = canvas.toDataURL("image/jpeg", 0.92);
     link.click();
+}
+
+/* =========================
+   홍보 영상 만들기 — 세척 전/후 사진에 자막·배경음악을 입혀 브라우저 안에서
+   슬라이드쇼 영상(webm)으로 실시간 녹화. 서버 업로드도, 외부 AI 호출도 없음
+   (배경음악은 사장님이 저작권 확인 후 올려주신 파일만 사용).
+========================= */
+
+const MUSIC_TRACKS = [
+    { id: "track1", name: "불꽃 아래 (잔잔한 느낌)", file: "music/track1.mp3" }
+];
+
+/* 세척 전 사진 자막 뱅크 — 오염으로 생기는 문제 강조 */
+const PROMO_PROBLEM_CAPTIONS = [
+    "오래 방치된 에어컨, 내부엔 먼지와 곰팡이가 가득해요",
+    "보이지 않는 곳에 매년 먼지가 쌓이고 있었습니다",
+    "퀴퀴한 냄새, 알고 보니 내부 곰팡이 때문이었어요",
+    "필터 뒤에 숨어있던 진짜 오염 상태",
+    "이 상태로 계속 트시면 호흡기 건강에 좋지 않아요",
+    "청소 안 된 에어컨, 전기세도 더 나가고 있었습니다",
+    "보이지 않는 세균과 곰팡이, 가족 건강을 위협해요",
+    "이대로 계속 쓰면 냄새는 더 심해질 뿐이에요"
+];
+
+/* 세척 후 사진 자막 뱅크 — 청소 후 좋아지는 점 강조 */
+const PROMO_BENEFIT_CAPTIONS = [
+    "분해 세척 후, 속까지 완전히 깨끗해졌습니다",
+    "곰팡이와 먼지 걱정 끝, 이제 안심하고 트세요",
+    "냄새 없는 시원한 바람, 바로 이 느낌입니다",
+    "깨끗해진 만큼 전기세도 절약돼요",
+    "가족 건강을 지키는 가장 확실한 방법",
+    "새 에어컨처럼 산뜻해진 바람을 느껴보세요",
+    "전문 분해청소로 보이지 않는 곳까지 깨끗하게",
+    "이제 마음 편히 에어컨 트셔도 됩니다"
+];
+
+const promoPhotos = { before: [], after: [] };
+let promoLastPick = { before: -1, after: -1 };
+
+function promoPickCaption(kind){
+    const list = kind === "before" ? PROMO_PROBLEM_CAPTIONS : PROMO_BENEFIT_CAPTIONS;
+    let index;
+    do{
+        index = Math.floor(Math.random() * list.length);
+    }while(list.length > 1 && index === promoLastPick[kind]);
+    promoLastPick[kind] = index;
+    return list[index];
+}
+
+function populatePromoMusicSelect(){
+    const sel = document.getElementById("promoMusic");
+    if(!sel || sel.options.length) return;
+    sel.innerHTML = MUSIC_TRACKS.map(t => `<option value="${t.id}">${t.name}</option>`).join("");
+}
+
+function handlePromoPhotos(event, kind){
+    const files = Array.from(event.target.files || []);
+    files.forEach(file => {
+        promoPhotos[kind].push({
+            url: URL.createObjectURL(file),
+            name: file.name,
+            caption: promoPickCaption(kind)
+        });
+    });
+    event.target.value = "";
+    renderPromoGrid(kind);
+}
+
+function removePromoPhoto(kind, index){
+    URL.revokeObjectURL(promoPhotos[kind][index].url);
+    promoPhotos[kind].splice(index, 1);
+    renderPromoGrid(kind);
+}
+
+function updatePromoCaption(kind, index, value){
+    promoPhotos[kind][index].caption = value;
+}
+
+function renderPromoGrid(kind){
+    const grid = document.getElementById(kind === "before" ? "promoGridBefore" : "promoGridAfter");
+    grid.innerHTML = promoPhotos[kind].map((p, i) => `
+        <div class="promo-photo-card">
+            <img src="${p.url}" alt="${p.name}">
+            <textarea onchange="updatePromoCaption('${kind}',${i},this.value)">${p.caption}</textarea>
+            <button type="button" class="remove" onclick="removePromoPhoto('${kind}',${i})" title="삭제">×</button>
+        </div>
+    `).join("");
+}
+
+function clearPromoVideoForm(){
+    promoPhotos.before.forEach(p => URL.revokeObjectURL(p.url));
+    promoPhotos.after.forEach(p => URL.revokeObjectURL(p.url));
+    promoPhotos.before = [];
+    promoPhotos.after = [];
+    renderPromoGrid("before");
+    renderPromoGrid("after");
+    document.getElementById("promoResultWrap").style.display = "none";
+    document.getElementById("promoProgress").style.display = "none";
+}
+
+function promoLoadImage(url){
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = url;
+    });
+}
+
+/* CSS object-fit:cover 방식으로 이미지를 목표 영역에 꽉 채워 그림 (beforeafter의 baDrawCover와 동일한 방식) */
+function promoDrawCover(ctx, img, dx, dy, dw, dh){
+    const srcRatio = img.width / img.height;
+    const dstRatio = dw / dh;
+    let sx, sy, sw, sh;
+
+    if (srcRatio > dstRatio){
+        sh = img.height;
+        sw = sh * dstRatio;
+        sx = (img.width - sw) / 2;
+        sy = 0;
+    } else {
+        sw = img.width;
+        sh = sw / dstRatio;
+        sx = 0;
+        sy = (img.height - sh) / 2;
+    }
+
+    ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
+}
+
+function promoWrapText(ctx, text, maxWidth){
+    const words = text.split(" ");
+    const lines = [];
+    let line = "";
+    words.forEach(word => {
+        const test = line ? line + " " + word : word;
+        if (ctx.measureText(test).width > maxWidth && line){
+            lines.push(line);
+            line = word;
+        } else {
+            line = test;
+        }
+    });
+    if (line) lines.push(line);
+    return lines;
+}
+
+const PROMO_SEGMENT = 3.5; // 사진 1장 노출 시간(초)
+const PROMO_FADE = 0.45;   // 페이드 인/아웃 시간(초)
+const PROMO_OUTRO = 2.5;   // 마무리 문구 노출 시간(초)
+
+function promoAlphaAt(localT, segment, fade){
+    if (localT < fade) return localT / fade;
+    if (localT > segment - fade) return Math.max(0, (segment - localT) / fade);
+    return 1;
+}
+
+function promoPickMime(){
+    if (!window.MediaRecorder) return "";
+    const candidates = [
+        "video/webm;codecs=vp9,opus",
+        "video/webm;codecs=vp8,opus",
+        "video/webm"
+    ];
+    return candidates.find(c => MediaRecorder.isTypeSupported(c)) || "";
+}
+
+/* 영상 전체(사진 슬라이드 + 마무리)에 항상 떠 있는 상단 브랜드 띠 —
+   사진이 바뀌어도 계속 보여서, 이 영상이 팡이케어 홍보이고 서비스가
+   에어컨청소·냉매보충이라는 것과 홈페이지 주소를 계속 알려줌.
+   (영상 파일 자체는 클릭 이동이 안 되므로, 주소를 읽을 수 있는 글자로 노출) */
+const PROMO_SITE_URL = "pang2care.github.io/PANG2CARE";
+const PROMO_SERVICES_LINE = "에어컨청소 · 냉매보충";
+
+function drawPromoTopBand(ctx, W, H, bandH){
+    ctx.fillStyle = "#0b7f89";
+    ctx.fillRect(0, 0, W, bandH);
+
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    const nameSize = Math.round(bandH * 0.34);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = `bold ${nameSize}px 'Noto Sans KR', sans-serif`;
+    ctx.fillText("팡이케어", W / 2, bandH * 0.30);
+
+    const svcSize = Math.round(bandH * 0.20);
+    ctx.fillStyle = "#d2f5f2";
+    ctx.font = `bold ${svcSize}px 'Noto Sans KR', sans-serif`;
+    ctx.fillText(PROMO_SERVICES_LINE, W / 2, bandH * 0.60);
+
+    const urlSize = Math.round(bandH * 0.17);
+    ctx.fillStyle = "#eafcfb";
+    ctx.font = `${urlSize}px 'Noto Sans KR', sans-serif`;
+    ctx.fillText(PROMO_SITE_URL, W / 2, bandH * 0.85);
+}
+
+function drawPromoSlide(ctx, W, H, img, caption, alpha){
+    ctx.fillStyle = "#0b1f22";
+    ctx.fillRect(0, 0, W, H);
+
+    const bandH = Math.round(H * 0.16);
+
+    ctx.globalAlpha = alpha;
+    promoDrawCover(ctx, img, 0, bandH, W, H - bandH);
+    ctx.globalAlpha = 1;
+
+    // 하단 자막 바 (그라데이션으로 사진 위에 자연스럽게, 세척 전/후 문구는 사진과 함께 페이드)
+    const barH = Math.round(H * 0.22);
+    const grad = ctx.createLinearGradient(0, H - barH, 0, H);
+    grad.addColorStop(0, "rgba(6,26,29,0)");
+    grad.addColorStop(1, `rgba(6,26,29,${0.85 * alpha})`);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, H - barH, W, barH);
+
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = "#ffffff";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
+    const fontSize = Math.round(W * 0.042);
+    ctx.font = `bold ${fontSize}px 'Noto Sans KR', sans-serif`;
+    const lines = promoWrapText(ctx, caption || "", W * 0.86);
+    const lineH = fontSize * 1.35;
+    let ty = H - barH * 0.42 - (lines.length - 1) * lineH * 0.5;
+    lines.forEach(line => {
+        ctx.fillText(line, W * 0.06, ty);
+        ty += lineH;
+    });
+    ctx.globalAlpha = 1;
+
+    // 상단 브랜드 띠는 페이드와 무관하게 항상 100% 불투명하게 마지막에 그림
+    drawPromoTopBand(ctx, W, H, bandH);
+}
+
+function drawPromoOutro(ctx, W, H, brandName, brandRegion, alpha){
+    ctx.fillStyle = "#063a40";
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = "#ffffff";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    let y = H * 0.32;
+
+    const titleSize = Math.round(W * 0.09);
+    ctx.font = `bold ${titleSize}px 'Noto Sans KR', sans-serif`;
+    ctx.fillText(brandName, W / 2, y);
+    y += titleSize * 0.95;
+
+    const svcSize = Math.round(W * 0.045);
+    ctx.font = `bold ${svcSize}px 'Noto Sans KR', sans-serif`;
+    ctx.fillStyle = "#d2f5f2";
+    ctx.fillText(PROMO_SERVICES_LINE, W / 2, y);
+    y += svcSize * 1.6;
+
+    const subSize = Math.round(W * 0.042);
+    ctx.font = `bold ${subSize}px 'Noto Sans KR', sans-serif`;
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText(`${brandRegion}지금 예약하고 깨끗한 바람 만나보세요`, W / 2, y);
+    y += subSize * 1.6;
+
+    const urlSize = Math.round(W * 0.038);
+    ctx.font = `${urlSize}px 'Noto Sans KR', sans-serif`;
+    ctx.fillStyle = "#9fdedb";
+    ctx.fillText(PROMO_SITE_URL, W / 2, y);
+
+    ctx.globalAlpha = 1;
+}
+
+async function generatePromoVideo(mode){
+    const slides = [...promoPhotos.before, ...promoPhotos.after];
+    if (slides.length === 0){
+        alert("세척 전/후 사진을 먼저 올려주세요.");
+        return;
+    }
+    if (!window.MediaRecorder){
+        alert("이 브라우저는 영상 녹화 기능을 지원하지 않습니다. 최신 크롬/엣지 브라우저를 사용해주세요.");
+        return;
+    }
+
+    const vBtn = document.getElementById("promoVerticalBtn");
+    const hBtn = document.getElementById("promoHorizontalBtn");
+    vBtn.disabled = true;
+    hBtn.disabled = true;
+
+    const progress = document.getElementById("promoProgress");
+    progress.style.display = "block";
+    progress.textContent = "사진 불러오는 중...";
+    document.getElementById("promoResultWrap").style.display = "none";
+
+    let images, audioCtx, srcNode;
+    try{
+        images = await Promise.all(slides.map(s => promoLoadImage(s.url)));
+
+        const W = mode === "vertical" ? 720 : 1280;
+        const H = mode === "vertical" ? 1280 : 720;
+
+        const canvas = document.getElementById("promoCanvas");
+        canvas.width = W;
+        canvas.height = H;
+        const ctx = canvas.getContext("2d");
+
+        const settings = loadSettings();
+        const brandName = settings.name || "팡이케어";
+        const brandRegion = settings.region ? settings.region + " " : "";
+
+        const trackId = document.getElementById("promoMusic").value;
+        const track = MUSIC_TRACKS.find(t => t.id === trackId) || MUSIC_TRACKS[0];
+
+        // 브라우저는 <audio> 엘리먼트 하나당 createMediaElementSource()를 딱 한 번만 허용하므로,
+        // 두 번째 영상(세로→가로 등)을 만들 때 같은 엘리먼트를 재사용하면 오류가 남 —
+        // 매번 새 엘리먼트로 교체해서 항상 "한 번도 연결 안 된" 상태로 시작하게 함.
+        const prevAudioEl = document.getElementById("promoAudioEl");
+        const audioEl = prevAudioEl.cloneNode(false);
+        prevAudioEl.parentNode.replaceChild(audioEl, prevAudioEl);
+        audioEl.src = track.file;
+        audioEl.loop = true;
+        audioEl.currentTime = 0;
+
+        const totalDuration = slides.length * PROMO_SEGMENT + PROMO_OUTRO;
+
+        // AudioContext는 사용자 클릭(버튼) 직후인 이 함수 안에서 만들어야 브라우저 자동재생 정책에 걸리지 않음
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === "suspended") await audioCtx.resume();
+        srcNode = audioCtx.createMediaElementSource(audioEl);
+        const gainNode = audioCtx.createGain();
+        const destNode = audioCtx.createMediaStreamDestination();
+        srcNode.connect(gainNode);
+        gainNode.connect(destNode);
+        gainNode.connect(audioCtx.destination); // 생성되는 동안 미리듣기용 (원치 않으면 이 줄을 지우면 무음으로 생성됨)
+
+        const videoStream = canvas.captureStream(30);
+        const combined = new MediaStream([
+            ...videoStream.getVideoTracks(),
+            ...destNode.stream.getAudioTracks()
+        ]);
+
+        const mimeType = promoPickMime();
+        const recorder = new MediaRecorder(combined, mimeType ? { mimeType } : undefined);
+        const chunks = [];
+        recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+        const stopped = new Promise(resolve => { recorder.onstop = resolve; });
+
+        try{ await audioEl.play(); }catch(err){ /* 자동재생이 막혀도 영상 녹화는 계속 진행 (무음 영상) */ }
+        recorder.start();
+
+        const startTime = performance.now();
+
+        await new Promise(resolve => {
+            function frame(now){
+                const elapsed = (now - startTime) / 1000;
+
+                if (elapsed >= totalDuration){
+                    drawPromoOutro(ctx, W, H, brandName, brandRegion, 1);
+                    resolve();
+                    return;
+                }
+
+                progress.textContent = `영상 생성 중... ${elapsed.toFixed(1)} / ${totalDuration.toFixed(1)}초`;
+
+                if (elapsed >= slides.length * PROMO_SEGMENT){
+                    const localT = elapsed - slides.length * PROMO_SEGMENT;
+                    drawPromoOutro(ctx, W, H, brandName, brandRegion, promoAlphaAt(localT, PROMO_OUTRO, PROMO_FADE));
+                } else {
+                    const idx = Math.min(slides.length - 1, Math.floor(elapsed / PROMO_SEGMENT));
+                    const localT = elapsed - idx * PROMO_SEGMENT;
+                    drawPromoSlide(ctx, W, H, images[idx], slides[idx].caption, promoAlphaAt(localT, PROMO_SEGMENT, PROMO_FADE));
+                }
+
+                // 마지막 1.5초 구간 배경음악 페이드아웃
+                const fadeOutStart = totalDuration - 1.5;
+                gainNode.gain.value = elapsed > fadeOutStart ? Math.max(0, (totalDuration - elapsed) / 1.5) : 1;
+
+                requestAnimationFrame(frame);
+            }
+            requestAnimationFrame(frame);
+        });
+
+        recorder.stop();
+        audioEl.pause();
+        await stopped;
+
+        const blob = new Blob(chunks, { type: mimeType || "video/webm" });
+        const url = URL.createObjectURL(blob);
+
+        const video = document.getElementById("promoPreviewVideo");
+        video.src = url;
+        document.getElementById("promoResultWrap").style.display = "block";
+
+        const downloadBtn = document.getElementById("promoDownloadBtn");
+        downloadBtn.onclick = () => {
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `팡이케어-홍보영상-${mode === "vertical" ? "세로" : "가로"}.webm`;
+            a.click();
+        };
+
+        progress.textContent = "완성되었습니다! 아래에서 미리보고 다운로드하세요.";
+        logActivity(`AI 홍보 영상 생성 (${mode === "vertical" ? "세로" : "가로"}, 사진 ${slides.length}장)`);
+    }catch(err){
+        console.error(err);
+        progress.textContent = "영상 생성 중 오류가 발생했습니다: " + err.message;
+    }finally{
+        if (srcNode) srcNode.disconnect();
+        if (audioCtx) audioCtx.close();
+        vBtn.disabled = false;
+        hBtn.disabled = false;
+    }
 }
 
 /* 블로그 사진 첨부 — 세척 전/후로 구분해서 관리. 서버에 업로드하지 않고, 이 브라우저 화면에서만 미리보기로 보여줍니다. */
