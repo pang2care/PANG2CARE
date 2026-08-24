@@ -2728,15 +2728,18 @@ const PROMO_INTRO_HOOKS = [
     "지금 이 안이 이렇습니다"
 ];
 
-/* 세척 전 사진 자막 뱅크 — 오염으로 생기는 문제를 짧고 강하게 강조 */
+/* 세척 전 사진 자막 뱅크 — 부위를 따로 고르지 않았을 때 쓰이는 기본값이라,
+   "필터", "열교환기"처럼 특정 부위를 콕 집어 말하는 문구는 넣지 않음(그런
+   문구는 PROMO_PROBLEM_BY_PART에 있음) — 아무 사진에나 붙어도 어색하지
+   않도록 오염 문제를 짧고 강하게, 부위를 특정하지 않고 강조 */
 const PROMO_PROBLEM_CAPTIONS = [
     "이 안의 곰팡이, 보이시나요",
     "3년째 못 연 에어컨 내부",
     "숨쉴 때마다 마시는 먼지",
     "냄새의 진짜 범인 발견",
     "이 상태로 계속 사용하고 계셨나요?",
-    "오래 방치된 필터의 흔한 모습",
-    "필터 뒤 충격적인 상태",
+    "오래 방치된 흔한 모습",
+    "가려진 곳의 충격적인 상태",
     "이런 에어컨에서 바람이 나온다면?"
 ];
 
@@ -3099,6 +3102,29 @@ function promoLoadImage(url){
     });
 }
 
+/* 색 그레이딩(ctx.filter)을 사진 하나당 딱 한 번만 미리 구워서 별도 캔버스로
+   만들어둠. 원래는 매 프레임(초당 30번)마다 ctx.filter를 다시 적용했는데,
+   스마트폰 원본 사진처럼 크고 무거운 이미지에서는 이 필터가 프레임 하나당
+   수백 ms까지 걸릴 수 있어서(특히 여러 장을 연달아 재생할 때) 브라우저가
+   못 따라가고, 그 사이 실제 경과 시간이 훌쩍 지나가버려 뒤에 나올 사진
+   구간을 통째로 건너뛰는 원인이 됐음(반대로 그 무거운 사진 하나만 화면에
+   오래 머무는 것처럼 보임). 긴 변 1600px로 미리 축소도 해서 프레임마다
+   드는 비용을 한 번 더 줄임 */
+function promoGradeImage(img){
+    const MAX_DIM = 1600;
+    const scale = Math.min(1, MAX_DIM / Math.max(img.width, img.height));
+    const w = Math.max(1, Math.round(img.width * scale));
+    const h = Math.max(1, Math.round(img.height * scale));
+
+    const c = document.createElement("canvas");
+    c.width = w;
+    c.height = h;
+    const gctx = c.getContext("2d");
+    gctx.filter = "contrast(1.14) saturate(1.22) brightness(0.97)";
+    gctx.drawImage(img, 0, 0, w, h);
+    return c;
+}
+
 /* CSS object-fit:cover 방식으로 이미지를 목표 영역에 꽉 채워 그림 (beforeafter의 baDrawCover와 동일한 방식) */
 function promoDrawCover(ctx, img, dx, dy, dw, dh){
     const srcRatio = img.width / img.height;
@@ -3375,9 +3401,9 @@ function drawPromoSlide(ctx, W, H, img, caption, kind, alpha, zoomT, part){
     ctx.rect(0, photoY, W, photoH);
     ctx.clip();
     ctx.globalAlpha = alpha;
-    ctx.filter = "contrast(1.14) saturate(1.22) brightness(0.97)"; // 아트적인 색보정(색 그레이딩)
+    // 색 그레이딩은 promoGradeImage()에서 사진당 한 번만 미리 구워둔 상태라
+    // 여기서 매 프레임 ctx.filter를 다시 걸 필요가 없음(성능上 큰 차이)
     promoDrawCover(ctx, img, zx, zy, zw, zh);
-    ctx.filter = "none";
 
     // 비네트 — 가장자리를 살짝 눌러 시선을 중앙/자막 쪽으로 모음
     const vig = ctx.createRadialGradient(W / 2, photoY + photoH * 0.42, photoH * 0.2, W / 2, photoY + photoH * 0.42, photoH * 0.85);
@@ -3602,7 +3628,9 @@ async function generatePromoVideo(mode){
 
     let images, audioCtx, srcNode;
     try{
-        images = await Promise.all(slides.map(s => promoLoadImage(s.url)));
+        const rawImages = await Promise.all(slides.map(s => promoLoadImage(s.url)));
+        progress.textContent = "사진 보정 중...";
+        images = rawImages.map(promoGradeImage);
 
         const W = mode === "vertical" ? 720 : 1280;
         const H = mode === "vertical" ? 1280 : 720;
