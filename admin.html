@@ -1600,7 +1600,7 @@ textarea:focus{
                     </div>
                 </div>
 
-                <div class="ai-note">※ 사진과 음악은 서버에 업로드되지 않고 이 브라우저 안에서만 영상으로 합성됩니다. 세척 전/후 사진을 둘 다 올리면 그 사이에 "보이는 곳만 청소하지 않습니다" 브랜드 문구 화면이 짧게 자동으로 들어갑니다. 상단 띠에 팡이케어·서비스(에어컨청소·에어컨 냉매 보충)·프로필 링크 확인 문구가 항상 표시됩니다(세척 후 구간은 사진이 더 잘 보이도록 살짝 작아짐) — 다만 영상 파일 자체는 클릭 이동이 되지 않으니, 실제 게시할 때는 인스타그램 프로필 등에 홈페이지 링크를 걸어두고, 게시글 설명란에도 링크를 함께 붙여주세요. 영상은 .webm 파일로 저장되며, 일부 플랫폼(인스타그램 등)은 업로드 전 mp4 변환이 필요할 수 있습니다. 영상 생성에는 영상 길이만큼 시간이 걸리니 완료될 때까지 이 탭을 유지해주세요.</div>
+                <div class="ai-note">※ 사진과 음악은 서버에 업로드되지 않고 이 브라우저 안에서만 영상으로 합성됩니다. 세척 전/후 사진을 둘 다 올리면 그 사이에 "보이는 곳만 청소하지 않습니다" 브랜드 문구 화면이 짧게 자동으로 들어갑니다. 상단 띠에 팡이케어·서비스(에어컨청소·에어컨 냉매 보충)·프로필 링크 확인 문구가 항상 표시됩니다(세척 후 구간은 사진이 더 잘 보이도록 살짝 작아짐) — 다만 영상 파일 자체는 클릭 이동이 되지 않으니, 실제 게시할 때는 인스타그램 프로필 등에 홈페이지 링크를 걸어두고, 게시글 설명란에도 링크를 함께 붙여주세요. 영상은 .webm 파일로 저장되며, 일부 플랫폼(인스타그램 등)은 업로드 전 mp4 변환이 필요할 수 있습니다. 영상 생성에는 영상 길이만큼 시간이 걸리니 완료될 때까지 **다른 탭으로 이동하지 말고** 이 화면을 계속 보고 계세요 (다른 탭으로 이동하면 브라우저가 녹화를 잠깐 멈춰서 사진 일부가 영상에 안 나올 수 있어요).</div>
             </div>
         </section>
 
@@ -3764,8 +3764,22 @@ async function generatePromoVideo(mode){
 
         const startTime = performance.now();
 
+        // 크롬 등 브라우저는 "백그라운드 탭"의 requestAnimationFrame을 크게
+        // 늦추거나 거의 멈춰버림 — 생성 중에 다른 탭으로 이동하면 그동안
+        // 캔버스가 안 바뀐 채로 녹화되다가, 다시 돌아왔을 때 한꺼번에 시간이
+        // 훌쩍 지나가버려 중간 사진 여러 장이 통째로 안 나오는 원인이 됨.
+        // 이걸 감지해서 나중에 정확한 안내 문구를 보여주기 위해 기록해둠
+        let wentHidden = false;
+        let maxFrameGapMs = 0;
+        let prevFrameNow = null;
+        const onVisibilityChange = () => { if (document.hidden) wentHidden = true; };
+        document.addEventListener("visibilitychange", onVisibilityChange);
+
         await new Promise(resolve => {
             function frame(now){
+                if (prevFrameNow !== null) maxFrameGapMs = Math.max(maxFrameGapMs, now - prevFrameNow);
+                prevFrameNow = now;
+
                 const elapsed = (now - startTime) / 1000;
 
                 if (elapsed >= totalDuration){
@@ -3801,6 +3815,8 @@ async function generatePromoVideo(mode){
             requestAnimationFrame(frame);
         });
 
+        document.removeEventListener("visibilitychange", onVisibilityChange);
+
         recorder.stop();
         audioEl.pause();
         await stopped;
@@ -3820,16 +3836,24 @@ async function generatePromoVideo(mode){
             a.click();
         };
 
-        // 기기가 느려서 녹화가 실시간을 못 따라가면(오디오는 계속 흐르는데 영상만
-        // 뒤처지는 현상) 실제 녹화된 길이가 계획한 길이와 크게 달라짐 — 매번 영상을
-        // 처음부터 끝까지 눈으로 다 훑어보지 않아도 여기서 자동으로 확인해줌
+        // 기기가 느려서(또는 생성 중 다른 탭으로 이동해서) 녹화가 실시간을 못
+        // 따라가면 실제 녹화된 길이나 내용이 계획과 달라짐 — 매번 영상을 처음부터
+        // 끝까지 눈으로 다 훑어보지 않아도 여기서 자동으로 확인해줌. 탭이 백그라운드로
+        // 간 적이 있었는지(wentHidden), 프레임 사이 간격이 크게 벌어진 적이 있는지
+        // (maxFrameGapMs)를 같이 봐서 원인을 최대한 정확하게 안내함
+        const stallWarning = wentHidden
+            ? "⚠️ 영상 생성 중 다른 탭으로 이동하셔서 일부 사진이 화면에 반영되지 않았을 수 있어요. 영상 만드는 동안은 이 탭에서 벗어나지 말고 그대로 기다려주세요."
+            : (maxFrameGapMs > 1000
+                ? "⚠️ 생성 중 기기가 잠깐 멈춰서 일부 사진이 화면에 반영되지 않았을 수 있어요. 다른 탭·프로그램을 닫고 다시 만들어보세요."
+                : "⚠️ 이 영상이 정상적으로 안 만들어졌을 수 있어요. 다른 탭·프로그램을 닫고, 생성되는 동안 이 탭을 계속 보고 계신 상태로 다시 만들어보세요.");
+
         progress.textContent = "생성 완료, 확인 중...";
         progress.style.color = "";
         video.addEventListener("loadedmetadata", async () => {
             const tolerance = Math.max(2, totalDuration * 0.08);
             const diff = Math.abs(video.duration - totalDuration);
             if (diff > tolerance){
-                progress.textContent = `⚠️ 이 영상은 기기가 느려서 정상적으로 안 만들어졌을 수 있어요 (예상 ${totalDuration.toFixed(1)}초 / 실제 ${video.duration.toFixed(1)}초). 다른 탭·프로그램을 닫고 다시 만들어보세요.`;
+                progress.textContent = `${stallWarning} (예상 ${totalDuration.toFixed(1)}초 / 실제 ${video.duration.toFixed(1)}초)`;
                 progress.style.color = "#d64545";
                 return;
             }
@@ -3841,7 +3865,7 @@ async function generatePromoVideo(mode){
             }catch(err){ /* 확인 자체가 실패해도 영상은 이미 만들어졌으니 그냥 넘어감 */ }
 
             if (!varietyOk){
-                progress.textContent = "⚠️ 기기가 느려서 사진 일부가 화면에 너무 오래 멈춰 있는 것 같아요. 다른 탭·프로그램을 닫고 다시 만들어보세요.";
+                progress.textContent = stallWarning;
                 progress.style.color = "#d64545";
             } else {
                 progress.textContent = "완성되었습니다! 아래에서 미리보고 다운로드하세요.";
