@@ -1585,7 +1585,7 @@ textarea:focus{
                     </div>
                 </div>
 
-                <div class="ai-note">※ 사진과 음악은 서버에 업로드되지 않고 이 브라우저 안에서만 영상으로 합성됩니다. 상단 띠에 팡이케어·서비스(에어컨청소·에어컨 냉매 보충)·프로필 링크 확인 문구가 항상 표시됩니다 — 다만 영상 파일 자체는 클릭 이동이 되지 않으니, 실제 게시할 때는 인스타그램 프로필 등에 홈페이지 링크를 걸어두고, 게시글 설명란에도 링크를 함께 붙여주세요. 영상은 .webm 파일로 저장되며, 일부 플랫폼(인스타그램 등)은 업로드 전 mp4 변환이 필요할 수 있습니다. 영상 생성에는 영상 길이만큼 시간이 걸리니 완료될 때까지 이 탭을 유지해주세요.</div>
+                <div class="ai-note">※ 사진과 음악은 서버에 업로드되지 않고 이 브라우저 안에서만 영상으로 합성됩니다. 세척 전/후 사진을 둘 다 올리면 그 사이에 "보이는 곳만 청소하지 않습니다" 브랜드 문구 화면이 짧게 자동으로 들어갑니다. 상단 띠에 팡이케어·서비스(에어컨청소·에어컨 냉매 보충)·프로필 링크 확인 문구가 항상 표시됩니다(세척 후 구간은 사진이 더 잘 보이도록 살짝 작아짐) — 다만 영상 파일 자체는 클릭 이동이 되지 않으니, 실제 게시할 때는 인스타그램 프로필 등에 홈페이지 링크를 걸어두고, 게시글 설명란에도 링크를 함께 붙여주세요. 영상은 .webm 파일로 저장되며, 일부 플랫폼(인스타그램 등)은 업로드 전 mp4 변환이 필요할 수 있습니다. 영상 생성에는 영상 길이만큼 시간이 걸리니 완료될 때까지 이 탭을 유지해주세요.</div>
             </div>
         </section>
 
@@ -2719,7 +2719,7 @@ const PROMO_PROBLEM_CAPTIONS = [
     "3년째 못 연 에어컨 내부",
     "숨쉴 때마다 마시는 먼지",
     "냄새의 진짜 범인 발견",
-    "이 상태로 계속 사용해도 괜찮을까요?",
+    "이 상태로 계속 사용하고 계셨나요?",
     "오래 방치된 필터의 흔한 모습",
     "필터 뒤 충격적인 상태",
     "이런 에어컨에서 바람이 나온다면?"
@@ -2966,6 +2966,8 @@ function renderPromoGrid(kind){
 }
 
 function clearPromoVideoForm(){
+    document.getElementById("promoTitle").value = ""; // 지우지 않으면 다음 영상도 예전 제목이 계속 쓰임
+
     promoPhotos.before.forEach(p => URL.revokeObjectURL(p.url));
     promoPhotos.after.forEach(p => URL.revokeObjectURL(p.url));
     promoPhotos.before = [];
@@ -3034,6 +3036,7 @@ function promoWrapText(ctx, text, maxWidth){
 }
 
 const PROMO_INTRO = 2.2;          // 맨 앞 후킹 문구 노출 시간(초)
+const PROMO_MIDHOOK = 2.4;        // BEFORE→AFTER 사이 브랜드 신뢰 문구 노출 시간(초)
 const PROMO_SEGMENT_BEFORE = 4.2; // 세척 전 사진 1장 노출 시간(초) — 문제 상황을 충분히 인지시키려 좀 더 길게
 const PROMO_SEGMENT_AFTER = 3.5;  // 세척 후 사진 1장 노출 시간(초)
 const PROMO_FADE = 0.45;          // 페이드 인/아웃 시간(초)
@@ -3170,14 +3173,20 @@ function drawPromoIntro(ctx, W, H, title, hookLine, alpha){
         ty += size1 * 1.2;
     });
 
-    const size2 = Math.round(W * 0.098);
+    // hookLine이 짧은 단어가 아니라 문장으로 바뀌었으므로(예: "눈에 안 보이는 곰팡이,
+    // 이렇게 쌓여 있습니다") title처럼 줄바꿈을 적용해야 화면 밖으로 잘리지 않음
+    const size2 = Math.round(W * 0.058);
     ctx.font = `bold ${size2}px 'Noto Sans KR', sans-serif`;
-    ctx.lineWidth = size2 * 0.14;
-    ty += size2 * 0.55;
-    ctx.strokeStyle = "rgba(0,0,0,0.55)";
-    ctx.strokeText(hookLine, W / 2, ty);
-    ctx.fillStyle = PROMO_ACCENT_BEFORE;
-    ctx.fillText(hookLine, W / 2, ty);
+    ctx.lineWidth = size2 * 0.16;
+    ty += size2 * 0.9;
+    const hookLines = promoWrapText(ctx, hookLine, W * 0.84);
+    hookLines.forEach(line => {
+        ctx.strokeStyle = "rgba(0,0,0,0.55)";
+        ctx.strokeText(line, W / 2, ty);
+        ctx.fillStyle = PROMO_ACCENT_BEFORE;
+        ctx.fillText(line, W / 2, ty);
+        ty += size2 * 1.25;
+    });
 
     ctx.restore();
 
@@ -3192,6 +3201,52 @@ function drawPromoIntro(ctx, W, H, title, hookLine, alpha){
     promoDrawGrain(ctx, W, H, 0.06);
 }
 
+/* BEFORE → AFTER 사이에 짧게 끼워 넣는 브랜드 신뢰 화면 — 오염→깨끗 사진만
+   나열하면 "그냥 사진 광고"로 보이기 쉬워서, 중간에 "우리는 이런 방식으로
+   일한다"는 짧은 문장을 넣어 전문 업체라는 느낌을 더함 */
+function drawPromoMidHook(ctx, W, H, brandName, alpha){
+    ctx.fillStyle = "#052b2f";
+    ctx.fillRect(0, 0, W, H);
+
+    const glow = ctx.createRadialGradient(W / 2, H * 0.45, W * 0.05, W / 2, H * 0.45, W * 0.8);
+    glow.addColorStop(0, "rgba(87,230,201,0.18)");
+    glow.addColorStop(1, "rgba(87,230,201,0)");
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.globalAlpha = alpha;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.lineJoin = "round";
+
+    const tagSize = Math.round(W * 0.04);
+    ctx.font = `bold ${tagSize}px 'Noto Sans KR', sans-serif`;
+    ctx.fillStyle = "#7fded6";
+    ctx.fillText(brandName, W / 2, H * 0.36);
+
+    const mainSize = Math.round(W * 0.072);
+    ctx.font = `bold ${mainSize}px 'Noto Sans KR', sans-serif`;
+    ctx.lineWidth = mainSize * 0.15;
+    const mainLines = promoWrapText(ctx, "보이는 곳만 청소하지 않습니다", W * 0.84);
+    let ty = H * 0.46;
+    mainLines.forEach(line => {
+        ctx.strokeStyle = "rgba(0,0,0,0.5)";
+        ctx.strokeText(line, W / 2, ty);
+        ctx.fillStyle = "#ffffff";
+        ctx.fillText(line, W / 2, ty);
+        ty += mainSize * 1.22;
+    });
+
+    ty += mainSize * 0.35;
+    const subSize = Math.round(W * 0.042);
+    ctx.font = `bold ${subSize}px 'Noto Sans KR', sans-serif`;
+    ctx.fillStyle = PROMO_ACCENT_AFTER;
+    ctx.fillText("에어컨 내부까지 꼼꼼하게", W / 2, ty);
+
+    ctx.globalAlpha = 1;
+    promoDrawGrain(ctx, W, H, 0.06);
+}
+
 /* 세척 전/후 사진 슬라이드 — 색감 그레이딩(대비·채도 보정)과 비네트로 사진을
    좀 더 "찍은 사진"이 아니라 "만든 영상"처럼 보이게 하고, 천천히 확대되는
    줌 효과(켄 번즈)와 두 겹 외곽선으로 훨씬 굵어진 자막, BEFORE/AFTER 글로우
@@ -3200,7 +3255,9 @@ function drawPromoSlide(ctx, W, H, img, caption, kind, alpha, zoomT){
     ctx.fillStyle = "#0b1f22";
     ctx.fillRect(0, 0, W, H);
 
-    const bandH = Math.round(H * 0.16);
+    // AFTER 구간은 상단 브랜드 띠를 조금 작게 줄여서 영상 전체가 같은 템플릿처럼
+    // 반복되는 느낌을 줄이고, 깨끗해진 사진이 화면을 더 많이 차지하게 함
+    const bandH = Math.round(H * (kind === "after" ? 0.11 : 0.16));
     const photoY = bandH, photoH = H - bandH;
     const accent = kind === "before" ? PROMO_ACCENT_BEFORE : PROMO_ACCENT_AFTER;
 
@@ -3268,6 +3325,38 @@ function drawPromoSlide(ctx, W, H, img, caption, kind, alpha, zoomT){
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(badgeText, badgeX + badgeW / 2, badgeY + badgeH / 2 + 1);
+
+    // AFTER 사진에는 사진 우상단에 작은 "청소 완료" 도장을 찍어 그냥 사진이 아니라
+    // 실제 작업 결과라는 느낌을 더함 (실제 서비스인 완전분해 세척 기준 고정 문구)
+    if (kind === "after"){
+        const stampText = "✓ 완전분해 세척 완료";
+        const stampFont = Math.round(W * 0.026);
+        ctx.font = `bold ${stampFont}px 'Noto Sans KR', sans-serif`;
+        const stampW = ctx.measureText(stampText).width + stampFont * 1.4;
+        const stampH = stampFont * 1.9;
+        const stampX = W - stampW - W * 0.05, stampY = photoY + H * 0.025;
+        const sr = stampH / 2;
+
+        ctx.save();
+        ctx.globalAlpha = alpha * 0.94;
+        ctx.fillStyle = "rgba(5,20,18,0.55)";
+        ctx.beginPath();
+        ctx.moveTo(stampX + sr, stampY);
+        ctx.arcTo(stampX + stampW, stampY, stampX + stampW, stampY + stampH, sr);
+        ctx.arcTo(stampX + stampW, stampY + stampH, stampX, stampY + stampH, sr);
+        ctx.arcTo(stampX, stampY + stampH, stampX, stampY, sr);
+        ctx.arcTo(stampX, stampY, stampX + stampW, stampY, sr);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = PROMO_ACCENT_AFTER;
+        ctx.lineWidth = Math.max(1, stampFont * 0.08);
+        ctx.stroke();
+        ctx.fillStyle = "#eafff9";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(stampText, stampX + stampW / 2, stampY + stampH / 2 + 1);
+        ctx.restore();
+    }
 
     // 캡션 본문 — 이중 외곽선으로 훨씬 굵게 + 페이드와 함께 살짝 떠오르는 등장 모션
     ctx.textAlign = "left";
@@ -3444,11 +3533,26 @@ async function generatePromoVideo(mode){
         const introHook = PROMO_INTRO_HOOKS[Math.floor(Math.random() * PROMO_INTRO_HOOKS.length)];
 
         // 세척 전 슬라이드는 더 길게, 세척 후 슬라이드는 기존 길이로 — 슬라이드별 노출 시간과
-        // 시작 시점(누적합)을 미리 계산해둠
+        // 시작 시점(절대 경과 시간 기준)을 미리 계산해둠. 전/후 사진이 둘 다 있으면 그
+        // 사이에 짧은 브랜드 신뢰 문구(PROMO_MIDHOOK) 화면을 끼워 넣음
+        const afterCount = slides.length - beforeCount;
+        const hasMidHook = beforeCount > 0 && afterCount > 0;
         const segDurations = slides.map((_, i) => i < beforeCount ? PROMO_SEGMENT_BEFORE : PROMO_SEGMENT_AFTER);
-        const segStarts = segDurations.reduce((acc, d) => { acc.push(acc[acc.length - 1] + d); return acc; }, [0]);
-        const slidesDuration = segStarts[segStarts.length - 1];
-        const totalDuration = PROMO_INTRO + slidesDuration + PROMO_OUTRO;
+        const segStarts = [];
+        let midHookStart = null;
+        {
+            let t = PROMO_INTRO;
+            slides.forEach((_, i) => {
+                if (hasMidHook && i === beforeCount){
+                    midHookStart = t;
+                    t += PROMO_MIDHOOK;
+                }
+                segStarts.push(t);
+                t += segDurations[i];
+            });
+            var slidesEnd = t; // 마지막 슬라이드가 끝나는 시점 = 마무리 화면 시작 시점
+        }
+        const totalDuration = slidesEnd + PROMO_OUTRO;
 
         // AudioContext는 사용자 클릭(버튼) 직후인 이 함수 안에서 만들어야 브라우저 자동재생 정책에 걸리지 않음
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -3489,19 +3593,18 @@ async function generatePromoVideo(mode){
 
                 progress.textContent = `영상 생성 중... ${elapsed.toFixed(1)} / ${totalDuration.toFixed(1)}초`;
 
-                const slidesEnd = PROMO_INTRO + slidesDuration;
-
                 if (elapsed < PROMO_INTRO){
                     drawPromoIntro(ctx, W, H, introTitle, introHook, promoAlphaAt(elapsed, PROMO_INTRO, PROMO_FADE));
+                } else if (hasMidHook && elapsed >= midHookStart && elapsed < midHookStart + PROMO_MIDHOOK){
+                    drawPromoMidHook(ctx, W, H, brandName, promoAlphaAt(elapsed - midHookStart, PROMO_MIDHOOK, PROMO_FADE));
                 } else if (elapsed >= slidesEnd){
                     const localT = elapsed - slidesEnd;
                     drawPromoOutro(ctx, W, H, brandName, brandRegion, brandServiceLine, promoAlphaAt(localT, PROMO_OUTRO, PROMO_FADE));
                 } else {
-                    const withinSlides = elapsed - PROMO_INTRO;
-                    let idx = segStarts.findIndex((start, i) => i < segDurations.length && withinSlides < segStarts[i + 1]);
+                    let idx = segStarts.findIndex((start, i) => elapsed < start + segDurations[i]);
                     if (idx === -1) idx = slides.length - 1;
                     const segDuration = segDurations[idx];
-                    const localT = withinSlides - segStarts[idx];
+                    const localT = elapsed - segStarts[idx];
                     const kind = idx < beforeCount ? "before" : "after";
                     drawPromoSlide(ctx, W, H, images[idx], slides[idx].caption, kind, promoAlphaAt(localT, segDuration, PROMO_FADE), localT / segDuration);
                 }
