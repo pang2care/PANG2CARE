@@ -254,15 +254,28 @@ section{padding:105px 0}
 .review small{color:#8a979d;font-size:12px}
 
 /* CTA */
-.cta{padding:92px 0;background:linear-gradient(135deg,#061a28,#0a5265);color:#fff;text-align:center;position:relative;overflow:hidden}
-.cta:before,.cta:after{content:"";position:absolute;border-radius:50%;pointer-events:none}
-.cta:before{width:340px;height:340px;left:-120px;top:-190px;border:1px solid rgba(25,199,216,.25);box-shadow:0 0 0 45px rgba(25,199,216,.035)}
-.cta:after{width:300px;height:300px;right:-120px;bottom:-180px;border:1px solid rgba(184,239,101,.18)}
+.cta{
+  padding:92px 0;text-align:center;position:relative;overflow:hidden;color:#fff;
+  background:
+    radial-gradient(900px 420px at 12% -15%,rgba(216,180,115,.16),transparent 60%),
+    radial-gradient(900px 420px at 88% 115%,rgba(216,180,115,.16),transparent 60%),
+    linear-gradient(150deg,#05201c,#0d453d 55%,#0a332d);
+  border-top:1px solid rgba(216,180,115,.4);border-bottom:1px solid rgba(216,180,115,.4);
+}
+.cta:before,.cta:after{content:"";position:absolute;border-radius:50%;pointer-events:none;border:1px solid rgba(216,180,115,.35)}
+.cta:before{width:300px;height:300px;left:-140px;top:-170px}
+.cta:after{width:260px;height:260px;right:-120px;bottom:-150px}
 .cta .container{position:relative;z-index:1}
-.cta h2{font-size:clamp(32px,4vw,46px);letter-spacing:-3px;margin-bottom:12px;font-weight:950}
-.cta p{color:#c0d5dc;font-size:15px;margin-bottom:26px}
-.cta .btn{background:#fff;color:#0a5265;box-shadow:0 16px 35px rgba(0,0,0,.16)}
-.cta .btn:hover{background:var(--lime);color:#12250f;transform:translateY(-3px)}
+.cta-spark{position:absolute;width:7px;height:7px;background:#e9cf9a;transform:rotate(45deg);border-radius:2px;box-shadow:0 0 10px rgba(233,207,154,.8);opacity:.85;pointer-events:none}
+.cta-spark.s1{top:16%;left:9%}
+.cta-spark.s2{top:24%;right:11%}
+.cta-spark.s3{bottom:18%;left:14%}
+.cta-spark.s4{bottom:22%;right:9%}
+.cta-icon{width:88px;height:88px;margin:0 auto 22px}
+.cta h2{font-size:clamp(32px,4vw,46px);letter-spacing:-3px;margin-bottom:12px;font-weight:950;color:#f1dcae;text-shadow:0 0 26px rgba(233,207,154,.28)}
+.cta p{color:#cfe3da;font-size:15px;margin-bottom:26px}
+.cta .btn{background:transparent;border:1.5px solid #d8b473;color:#f1dcae;box-shadow:0 16px 35px rgba(0,0,0,.25)}
+.cta .btn:hover{background:#d8b473;color:#0a2420;transform:translateY(-3px)}
 
 /* CONTACT */
 .contact-box{max-width:800px;margin:auto;background:#fff;padding:40px;border-radius:24px;border:1px solid var(--line);box-shadow:var(--shadow)}
@@ -1264,6 +1277,26 @@ footer:before{content:"";position:absolute;top:0;left:0;right:0;height:2px;backg
 <section class="cta">
 
     <div class="container">
+
+        <span class="cta-spark s1"></span>
+        <span class="cta-spark s2"></span>
+        <span class="cta-spark s3"></span>
+        <span class="cta-spark s4"></span>
+
+        <div class="cta-icon" aria-hidden="true">
+            <svg viewBox="0 0 100 100" width="88" height="88">
+                <circle cx="50" cy="50" r="34" fill="none" stroke="#d8b473" stroke-width="3"/>
+                <circle cx="50" cy="50" r="27" fill="none" stroke="#d8b473" stroke-width="1.5"/>
+                <line x1="30" y1="38" x2="70" y2="38" stroke="#d8b473" stroke-width="2.5" stroke-linecap="round"/>
+                <line x1="28" y1="46" x2="72" y2="46" stroke="#d8b473" stroke-width="2.5" stroke-linecap="round"/>
+                <line x1="28" y1="54" x2="72" y2="54" stroke="#d8b473" stroke-width="2.5" stroke-linecap="round"/>
+                <line x1="30" y1="62" x2="70" y2="62" stroke="#d8b473" stroke-width="2.5" stroke-linecap="round"/>
+                <path d="M68 30 C80 34 84 46 76 54" fill="none" stroke="#e9cf9a" stroke-width="2" stroke-linecap="round" opacity=".8"/>
+                <path d="M74 22 C90 28 95 44 84 55" fill="none" stroke="#e9cf9a" stroke-width="1.5" stroke-linecap="round" opacity=".5"/>
+                <path d="M78 66 C84 70 85 76 80 79 C75 82 71 78 73 74 C74 71 76 68 78 66 Z" fill="#9fd8c7"/>
+                <path d="M22 70 C26 73 27 77 24 80 C21 83 18 80 19 77 C20 75 21 72 22 70 Z" fill="#9fd8c7"/>
+            </svg>
+        </div>
 
         <h2>
             에어컨 청소가 필요하신가요?
