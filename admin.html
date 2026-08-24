@@ -2722,16 +2722,16 @@ const PROMO_PROBLEM_CAPTIONS = [
     "이대로 트면 위험해요",
     "전기세 더 나가는 이유",
     "필터 뒤 충격적인 상태",
-    "이 상태로 사용하고 계셨나요?"
+    "이런 에어컨에서 바람이 나온다면?"
 ];
 
 /* 세척 후 사진 자막 뱅크 — 청소 후 좋아지는 점을 짧고 강하게 강조 */
 const PROMO_BENEFIT_CAPTIONS = [
     "이렇게 달라졌습니다",
-    "완전히 새 에어컨처럼",
+    "새 에어컨처럼 깨끗하게",
     "이제 안심하고 트세요",
     "냄새 걱정, 끝났어요",
-    "전기세까지 절약됐어요",
+    "에어컨 효율까지 깔끔하게 관리",
     "속까지 완전히 깨끗해요",
     "온 가족이 편하게 사용하세요",
     "진짜 시원한 바람의 차이"
@@ -3297,7 +3297,9 @@ function drawPromoSlide(ctx, W, H, img, caption, kind, alpha, zoomT){
     promoDrawGrain(ctx, W, H, 0.05);
 }
 
-function drawPromoOutro(ctx, W, H, brandName, brandRegion, alpha){
+const PROMO_PHONE = "010-5641-1192";
+
+function drawPromoOutro(ctx, W, H, brandName, brandRegion, brandServiceLine, alpha){
     const bg = ctx.createLinearGradient(0, 0, 0, H);
     bg.addColorStop(0, "#0b7f89");
     bg.addColorStop(1, "#052b2f");
@@ -3329,11 +3331,13 @@ function drawPromoOutro(ctx, W, H, brandName, brandRegion, alpha){
     const svcSize = Math.round(W * 0.046);
     ctx.font = `bold ${svcSize}px 'Noto Sans KR', sans-serif`;
     ctx.fillStyle = "#d2f5f2";
-    ctx.fillText(PROMO_SERVICES_LINE, W / 2, y);
+    ctx.fillText(brandServiceLine, W / 2, y);
     y += svcSize * 1.9;
 
-    // 코랄 CTA 버튼 — "지금 예약하기" 느낌의 강조 박스 (은은한 글로우로 입체감)
-    const ctaText = `${brandRegion}지금 예약하고 깨끗한 바람 만나보세요`;
+    // 코랄 CTA 버튼 — "전화로 바로 예약" 느낌의 강조 박스 (은은한 글로우로 입체감).
+    // 실제 다이얼 가능한 전화번호를 넣어서, 화면 속 글자를 눌러 이동은 못 해도
+    // 번호를 보고 바로 전화 걸 수 있게 함
+    const ctaText = `📞 전화 예약  ${PROMO_PHONE}`;
     const ctaSize = Math.round(W * 0.044);
     ctx.font = `bold ${ctaSize}px 'Noto Sans KR', sans-serif`;
     const ctaTextW = ctx.measureText(ctaText).width;
@@ -3359,12 +3363,24 @@ function drawPromoOutro(ctx, W, H, brandName, brandRegion, alpha){
 
     ctx.fillStyle = "#ffffff";
     ctx.fillText(ctaText, W / 2, ctaY + ctaH / 2 + 1);
-    y = ctaY + ctaH + ctaSize * 1.6;
+    y = ctaY + ctaH;
 
-    const urlSize = Math.round(W * 0.04);
-    ctx.font = `${urlSize}px 'Noto Sans KR', sans-serif`;
+    // 온라인 예약 안내 + 출장 지역 태그 — 세로(9:16)/가로(16:9) 둘 다에서 안전하게
+    // 들어가도록 W가 아닌 min(W,H) 기준으로 크기를 잡음 (가로 모드는 세로 공간이
+    // 좁아서 W 기준으로 잡으면 화면 아래로 넘칠 수 있음)
+    const smallBase = Math.min(W, H);
+    const onlineSize = Math.round(smallBase * 0.05);
+    ctx.font = `bold ${onlineSize}px 'Noto Sans KR', sans-serif`;
     ctx.fillStyle = "#c7f3ee";
-    ctx.fillText(PROMO_LINK_CTA, W / 2, y);
+    y += onlineSize * 1.2;
+    ctx.fillText(`🌐 온라인 예약  ${PROMO_LINK_CTA.replace("🔗 ", "")}`, W / 2, y);
+
+    const regionText = brandRegion ? brandRegion.replace(/\//g, " · ") + " 출장" : "출장 지역 문의";
+    const regionSize = Math.round(smallBase * 0.04);
+    ctx.font = `${regionSize}px 'Noto Sans KR', sans-serif`;
+    ctx.fillStyle = "#9fd9d2";
+    y += onlineSize * 1.5;
+    ctx.fillText(regionText, W / 2, y);
 
     promoDrawGrain(ctx, W, H, 0.06);
 
@@ -3407,7 +3423,8 @@ async function generatePromoVideo(mode){
 
         const settings = loadSettings();
         const brandName = settings.name || "팡이케어";
-        const brandRegion = settings.region ? settings.region + " " : "";
+        const brandRegion = settings.region || "";
+        const brandServiceLine = (settings.service || "에어컨 분해 세척") + " 전문";
 
         const trackId = document.getElementById("promoMusic").value;
         const track = promoResolveTrackForGeneration(trackId);
@@ -3465,7 +3482,7 @@ async function generatePromoVideo(mode){
                 const elapsed = (now - startTime) / 1000;
 
                 if (elapsed >= totalDuration){
-                    drawPromoOutro(ctx, W, H, brandName, brandRegion, 1);
+                    drawPromoOutro(ctx, W, H, brandName, brandRegion, brandServiceLine, 1);
                     resolve();
                     return;
                 }
@@ -3478,7 +3495,7 @@ async function generatePromoVideo(mode){
                     drawPromoIntro(ctx, W, H, introTitle, introHook, promoAlphaAt(elapsed, PROMO_INTRO, PROMO_FADE));
                 } else if (elapsed >= slidesEnd){
                     const localT = elapsed - slidesEnd;
-                    drawPromoOutro(ctx, W, H, brandName, brandRegion, promoAlphaAt(localT, PROMO_OUTRO, PROMO_FADE));
+                    drawPromoOutro(ctx, W, H, brandName, brandRegion, brandServiceLine, promoAlphaAt(localT, PROMO_OUTRO, PROMO_FADE));
                 } else {
                     const withinSlides = elapsed - PROMO_INTRO;
                     let idx = segStarts.findIndex((start, i) => i < segDurations.length && withinSlides < segStarts[i + 1]);
