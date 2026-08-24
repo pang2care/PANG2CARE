@@ -3109,9 +3109,9 @@ function promoLoadImage(url){
    못 따라가고, 그 사이 실제 경과 시간이 훌쩍 지나가버려 뒤에 나올 사진
    구간을 통째로 건너뛰는 원인이 됐음(반대로 그 무거운 사진 하나만 화면에
    오래 머무는 것처럼 보임). 긴 변 1600px로 미리 축소도 해서 프레임마다
-   드는 비용을 한 번 더 줄임 */
+   드는 비용을 한 번 더 줄임(영상 자체가 최대 1280px라 그 이상은 불필요) */
 function promoGradeImage(img){
-    const MAX_DIM = 1600;
+    const MAX_DIM = 1280;
     const scale = Math.min(1, MAX_DIM / Math.max(img.width, img.height));
     const w = Math.max(1, Math.round(img.width * scale));
     const h = Math.max(1, Math.round(img.height * scale));
@@ -3198,9 +3198,17 @@ const PROMO_LINK_CTA = "🔗 프로필 링크 확인";
 const PROMO_SERVICES_LINE = "에어컨청소 · 에어컨 냉매 보충";
 
 /* 필름 그레인 텍스처 — 화면 전체에 은은하게 얹어서 밋밋한 디지털 느낌 대신
-   아트적인 질감을 줌. 타일 하나를 한 번만 만들어 재사용(성능), 프레임마다
-   살짝 위치를 흔들어 살아있는 느낌을 줌 */
+   아트적인 질감을 줌. 타일 하나를 한 번만 만들어 재사용(성능).
+   원래는 프레임마다 위치를 랜덤하게 흔들어 살아있는 느낌을 줬는데, 그러면
+   매 프레임(초당 30번)마다 화면 전체 픽셀이 조금씩 달라져서 영상 인코더가
+   "이전 프레임이랑 거의 똑같다"는 걸 활용 못 하고 매번 새로 인코딩해야 함
+   — 사진이 무겁거나 느린 기기에서는 이게 쌓여서 녹화가 실시간을 못
+   따라가고, 그 결과 오디오는 계속 흐르는데 영상은 뒤로 밀리면서 특정
+   사진이 화면에 오래 멈춰 있는 것처럼 보이는 원인이 됐음. 위치를
+   한 번만 고정해서(세션당 1회) 이 문제를 없앰 */
 let promoGrainTile = null;
+let promoGrainOffsetX = 0;
+let promoGrainOffsetY = 0;
 function promoGetGrainPattern(ctx){
     if (!promoGrainTile){
         promoGrainTile = document.createElement("canvas");
@@ -3216,6 +3224,8 @@ function promoGetGrainPattern(ctx){
             imgData.data[i + 3] = 255;
         }
         gctx.putImageData(imgData, 0, 0);
+        promoGrainOffsetX = Math.random() * 30 - 15;
+        promoGrainOffsetY = Math.random() * 30 - 15;
     }
     return ctx.createPattern(promoGrainTile, "repeat");
 }
@@ -3225,7 +3235,7 @@ function promoDrawGrain(ctx, W, H, strength){
     ctx.globalAlpha = strength;
     ctx.globalCompositeOperation = "overlay";
     ctx.fillStyle = promoGetGrainPattern(ctx);
-    ctx.translate(Math.random() * 30 - 15, Math.random() * 30 - 15);
+    ctx.translate(promoGrainOffsetX, promoGrainOffsetY);
     ctx.fillRect(-20, -20, W + 40, H + 40);
     ctx.restore();
 }
