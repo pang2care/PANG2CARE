@@ -1544,7 +1544,7 @@ textarea:focus{
 
                     <div>
                         <label>세척 전 사진 (오염 문제 강조)</label>
-                        <select id="promoPartBefore" style="margin-bottom:8px;">
+                        <select id="promoPartBefore" style="margin-bottom:8px;" onchange="syncPromoPart(this.value)">
                             <option value="">부위 선택 안 함 (문구 랜덤)</option>
                             <option value="필터">필터</option>
                             <option value="열교환기">열교환기</option>
@@ -1560,7 +1560,7 @@ textarea:focus{
 
                     <div>
                         <label>세척 후 사진 (청소 효과 강조)</label>
-                        <select id="promoPartAfter" style="margin-bottom:8px;">
+                        <select id="promoPartAfter" style="margin-bottom:8px;" onchange="syncPromoPart(this.value)">
                             <option value="">부위 선택 안 함 (문구 랜덤)</option>
                             <option value="필터">필터</option>
                             <option value="열교환기">열교환기</option>
@@ -2986,6 +2986,15 @@ function renderPromoMusicUploadList(){
 
 function promoResolveTrack(trackId){
     return MUSIC_TRACKS.find(t => t.id === trackId) || promoCustomTracks.find(t => t.id === trackId) || MUSIC_TRACKS[0];
+}
+
+// 세척 전/후 부위 드롭다운을 하나로 묶어서, 한쪽에서 부위를 고르면 반대쪽도
+// 같이 바뀌게 함 — 매번 전/후에서 같은 부위를 두 번 고르는 번거로움을 없앰
+function syncPromoPart(value){
+    const before = document.getElementById("promoPartBefore");
+    const after = document.getElementById("promoPartAfter");
+    if (before) before.value = value;
+    if (after) after.value = value;
 }
 
 function handlePromoPhotos(event, kind){
