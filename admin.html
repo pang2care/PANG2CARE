@@ -2457,7 +2457,7 @@ function loadSettings(){
 function fillSettingsForm(){
     const s = loadSettings();
     document.getElementById("setName").value = s.name || "팡이케어";
-    document.getElementById("setRegion").value = s.region || "";
+    document.getElementById("setRegion").value = s.region || "부산/양산";
     document.getElementById("setService").value = s.service || "에어컨 분해 세척";
     document.getElementById("setAutoPublish").value = s.autoPublish || "off";
     document.getElementById("setPolicy").value = s.policy ||
@@ -3692,7 +3692,7 @@ async function generatePromoVideo(mode){
 
         const settings = loadSettings();
         const brandName = settings.name || "팡이케어";
-        const brandRegion = settings.region || "";
+        const brandRegion = settings.region || "부산/양산";
         const brandServiceLine = (settings.service || "에어컨 분해 세척") + " 전문";
 
         const trackId = document.getElementById("promoMusic").value;
@@ -3879,7 +3879,7 @@ const PROMO_CAPTION_CLOSERS = [
 function generatePromoCaption(){
     const settings = loadSettings();
     const brandName = settings.name || "팡이케어";
-    const region = settings.region || "";
+    const region = settings.region || "부산/양산";
     const service = settings.service || "에어컨 분해 세척";
 
     const titleInput = document.getElementById("promoTitle").value.trim();
