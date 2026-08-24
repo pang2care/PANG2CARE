@@ -3178,6 +3178,44 @@ function promoAlphaAt(localT, segment, fade){
     return 1;
 }
 
+/* 녹화된 영상의 길이는 맞아도, 기기가 느려서 인코딩이 밀리면 "시간은 다
+   흘렀는데 화면 내용은 이전 사진에 멈춰있는" 상태가 될 수 있음(길이 검사만으론
+   못 잡아냄) — 슬라이드마다(전/후 사진 구간) 시작 직후 프레임을 하나씩
+   캡처해서 작게 축소한 뒤, 바로 옆 사진과 화면이 사실상 똑같은지 비교함.
+   진짜 다른 사진이면 당연히 색·구도가 달라 화소 차이가 크게 나고, 녹화가
+   밀려 같은 화면이 계속 잡혔다면 차이가 거의 0에 가까움 */
+async function promoVerifySlideVariety(video, segStarts, segDurations){
+    if (segStarts.length < 2) return true;
+
+    const cvs = document.createElement("canvas");
+    cvs.width = 48;
+    cvs.height = 48;
+    const cctx = cvs.getContext("2d");
+    const samples = [];
+
+    for (let i = 0; i < segStarts.length; i++){
+        const t = Math.max(0, Math.min(video.duration - 0.05, segStarts[i] + Math.min(1.2, segDurations[i] * 0.5)));
+        await new Promise(resolve => {
+            const onSeeked = () => { video.removeEventListener("seeked", onSeeked); resolve(); };
+            video.addEventListener("seeked", onSeeked);
+            video.currentTime = t;
+        });
+        cctx.drawImage(video, 0, 0, 48, 48);
+        samples.push(cctx.getImageData(0, 0, 48, 48).data);
+    }
+
+    video.currentTime = 0;
+
+    for (let i = 1; i < samples.length; i++){
+        let diff = 0;
+        for (let p = 0; p < samples[i].length; p += 4){
+            diff += Math.abs(samples[i][p] - samples[i - 1][p]);
+        }
+        if (diff / (samples[i].length / 4) < 3) return false; // 옆 사진과 사실상 동일한 화면
+    }
+    return true;
+}
+
 function promoPickMime(){
     if (!window.MediaRecorder) return "";
     const candidates = [
@@ -3436,7 +3474,11 @@ function drawPromoSlide(ctx, W, H, img, caption, kind, alpha, zoomT, part){
 
     ctx.globalAlpha = alpha;
 
-    // BEFORE / AFTER 배지 (은은한 글로우로 입체감)
+    // BEFORE / AFTER 배지 — 원래는 ctx.shadowBlur로 은은한 글로우를 줬는데,
+    // Canvas 2D의 shadowBlur는 특히 느린 연산이라 이 배지가 슬라이드마다
+    // 계속 떠 있는 동안(초당 30번) 매 프레임 다시 계산되면서 무거운 사진과
+    // 겹치면 실시간 녹화가 못 따라가는 원인 중 하나였음 — 글로우 없이
+    // 플랫한 배지로 바꿔서 이 비용을 없앰
     const badgeText = kind === "before" ? "⚠ BEFORE" : "✨ AFTER";
     const badgeFont = Math.round(W * 0.032);
     ctx.font = `bold ${badgeFont}px 'Noto Sans KR', sans-serif`;
@@ -3446,8 +3488,6 @@ function drawPromoSlide(ctx, W, H, img, caption, kind, alpha, zoomT, part){
     const br = badgeH / 2;
 
     ctx.save();
-    ctx.shadowColor = accent;
-    ctx.shadowBlur = badgeFont * 0.8;
     ctx.fillStyle = accent;
     ctx.beginPath();
     ctx.moveTo(badgeX + br, badgeY);
@@ -3704,7 +3744,10 @@ async function generatePromoVideo(mode){
         gainNode.connect(destNode);
         gainNode.connect(audioCtx.destination); // 생성되는 동안 미리듣기용 (원치 않으면 이 줄을 지우면 무음으로 생성됨)
 
-        const videoStream = canvas.captureStream(30);
+        // 30fps 대신 24fps로 요청 — 슬라이드쇼 성격상 체감 차이는 거의 없으면서
+        // 인코더가 초당 처리해야 할 프레임 수를 20% 줄여 느린 기기에서 실시간
+        // 녹화를 못 따라가 프레임이 밀리는(사진이 멈춰 보이는) 위험을 줄임
+        const videoStream = canvas.captureStream(24);
         const combined = new MediaStream([
             ...videoStream.getVideoTracks(),
             ...destNode.stream.getAudioTracks()
@@ -3782,11 +3825,23 @@ async function generatePromoVideo(mode){
         // 처음부터 끝까지 눈으로 다 훑어보지 않아도 여기서 자동으로 확인해줌
         progress.textContent = "생성 완료, 확인 중...";
         progress.style.color = "";
-        video.addEventListener("loadedmetadata", () => {
+        video.addEventListener("loadedmetadata", async () => {
             const tolerance = Math.max(2, totalDuration * 0.08);
             const diff = Math.abs(video.duration - totalDuration);
             if (diff > tolerance){
                 progress.textContent = `⚠️ 이 영상은 기기가 느려서 정상적으로 안 만들어졌을 수 있어요 (예상 ${totalDuration.toFixed(1)}초 / 실제 ${video.duration.toFixed(1)}초). 다른 탭·프로그램을 닫고 다시 만들어보세요.`;
+                progress.style.color = "#d64545";
+                return;
+            }
+
+            progress.textContent = "생성 완료, 사진별로 잘 나왔는지 확인 중...";
+            let varietyOk = true;
+            try{
+                varietyOk = await promoVerifySlideVariety(video, segStarts, segDurations);
+            }catch(err){ /* 확인 자체가 실패해도 영상은 이미 만들어졌으니 그냥 넘어감 */ }
+
+            if (!varietyOk){
+                progress.textContent = "⚠️ 기기가 느려서 사진 일부가 화면에 너무 오래 멈춰 있는 것 같아요. 다른 탭·프로그램을 닫고 다시 만들어보세요.";
                 progress.style.color = "#d64545";
             } else {
                 progress.textContent = "완성되었습니다! 아래에서 미리보고 다운로드하세요.";
