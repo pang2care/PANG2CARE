@@ -3146,6 +3146,20 @@ function promoDrawCover(ctx, img, dx, dy, dw, dh){
     ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
 }
 
+// drawPromoSlide의 비네트 그라데이션 캐시 — 같은 W/H/kind 조합(세로·가로
+// 모드 각각 before/after 2종류뿐)이면 매 프레임 새로 만들지 않고 재사용
+const promoVignetteCache = {};
+function promoGetVignette(ctx, W, H, photoY, photoH, kind){
+    const key = `${W}x${H}x${kind}`;
+    if (!promoVignetteCache[key]){
+        const vig = ctx.createRadialGradient(W / 2, photoY + photoH * 0.42, photoH * 0.2, W / 2, photoY + photoH * 0.42, photoH * 0.85);
+        vig.addColorStop(0, "rgba(0,0,0,0)");
+        vig.addColorStop(1, "rgba(0,0,0,0.4)");
+        promoVignetteCache[key] = vig;
+    }
+    return promoVignetteCache[key];
+}
+
 function promoWrapText(ctx, text, maxWidth){
     const words = text.split(" ");
     const lines = [];
@@ -3453,11 +3467,10 @@ function drawPromoSlide(ctx, W, H, img, caption, kind, alpha, zoomT, part){
     // 여기서 매 프레임 ctx.filter를 다시 걸 필요가 없음(성능上 큰 차이)
     promoDrawCover(ctx, img, zx, zy, zw, zh);
 
-    // 비네트 — 가장자리를 살짝 눌러 시선을 중앙/자막 쪽으로 모음
-    const vig = ctx.createRadialGradient(W / 2, photoY + photoH * 0.42, photoH * 0.2, W / 2, photoY + photoH * 0.42, photoH * 0.85);
-    vig.addColorStop(0, "rgba(0,0,0,0)");
-    vig.addColorStop(1, "rgba(0,0,0,0.4)");
-    ctx.fillStyle = vig;
+    // 비네트 — 가장자리를 살짝 눌러 시선을 중앙/자막 쪽으로 모음. 슬라이드가 떠
+    // 있는 내내(초당 프레임마다) 호출되는 함수라, 그라데이션을 매번 새로 만들지
+    // 않고 같은 W/H/kind 조합이면 캐시해서 재사용함(성능)
+    ctx.fillStyle = promoGetVignette(ctx, W, H, photoY, photoH, kind);
     ctx.fillRect(0, photoY, W, photoH);
 
     ctx.globalAlpha = 1;
@@ -3744,22 +3757,30 @@ async function generatePromoVideo(mode){
         gainNode.connect(destNode);
         gainNode.connect(audioCtx.destination); // 생성되는 동안 미리듣기용 (원치 않으면 이 줄을 지우면 무음으로 생성됨)
 
-        // 30fps 대신 24fps로 요청 — 슬라이드쇼 성격상 체감 차이는 거의 없으면서
-        // 인코더가 초당 처리해야 할 프레임 수를 20% 줄여 느린 기기에서 실시간
-        // 녹화를 못 따라가 프레임이 밀리는(사진이 멈춰 보이는) 위험을 줄임
-        const videoStream = canvas.captureStream(24);
+        // 슬라이드쇼 성격상 체감 차이는 거의 없으면서 인코더가 초당 처리해야 할
+        // 프레임 수를 줄여 느린 기기에서 실시간 녹화를 못 따라가는 위험을 줄임
+        const videoStream = canvas.captureStream(20);
         const combined = new MediaStream([
             ...videoStream.getVideoTracks(),
             ...destNode.stream.getAudioTracks()
         ]);
 
         const mimeType = promoPickMime();
-        const recorder = new MediaRecorder(combined, mimeType ? { mimeType } : undefined);
+        // 비트레이트를 적당히 낮춰서 인코더가 화질 최적화에 쏟는 연산을 줄임(이
+        // 콘텐츠는 사진 슬라이드쇼라 고화질 스트리밍만큼 비트레이트가 필요 없음)
+        const recorder = new MediaRecorder(combined, {
+            ...(mimeType ? { mimeType } : {}),
+            videoBitsPerSecond: 2_500_000
+        });
         const chunks = [];
         recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
         const stopped = new Promise(resolve => { recorder.onstop = resolve; });
+        recorder.onerror = e => console.error("MediaRecorder error", e.error || e);
 
         try{ await audioEl.play(); }catch(err){ /* 자동재생이 막혀도 영상 녹화는 계속 진행 (무음 영상) */ }
+        // timeslice를 주면 Blob에 재생 길이(duration) 메타데이터가 제대로 안 실려서
+        // video.duration이 Infinity로 나오는 크롬 버그가 있어 일부러 안 씀 —
+        // 인자 없이 호출해서 stop() 시점에 완결된 하나의 Blob으로 받음
         recorder.start();
 
         const startTime = performance.now();
