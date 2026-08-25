@@ -302,7 +302,7 @@ function handleCreate_(sheet, data){
     try{
         sendKakaoNotification_(data);
     }catch(err){
-        // 무시: 알림은 부가 기능이라 예약 처리를 막지 않습니다.
+        Logger.log("카카오 알림 중 예외 발생: " + err);
     }
 
     return jsonOutput_({ ok: true, id: id });
@@ -370,7 +370,10 @@ function refreshKakaoAccessToken_(){
 function sendKakaoNotification_(data){
     const props = PropertiesService.getScriptProperties();
     const accessToken = props.getProperty("KAKAO_ACCESS_TOKEN");
-    if(!accessToken) return; // 아직 카카오 연동 인증 전이면 조용히 건너뜁니다.
+    if(!accessToken){
+        Logger.log("카카오 알림 건너뜀: KAKAO_ACCESS_TOKEN이 저장되어 있지 않음");
+        return; // 아직 카카오 연동 인증 전이면 조용히 건너뜁니다.
+    }
 
     const text = "[팡이케어 새 예약]\n" +
         "이름: " + (data.name || "") + "\n" +
@@ -398,11 +401,16 @@ function sendKakaoNotification_(data){
     };
 
     let resp = callKakao_(accessToken);
+    Logger.log("카카오 알림 1차 응답: " + resp.getResponseCode() + " / " + resp.getContentText());
 
     if(resp.getResponseCode() === 401){
         // 액세스 토큰이 만료된 경우 갱신 후 한 번 더 시도합니다.
         const refreshed = refreshKakaoAccessToken_();
-        if(refreshed) callKakao_(refreshed);
+        Logger.log("토큰 갱신 결과: " + (refreshed ? "성공" : "실패"));
+        if(refreshed){
+            const resp2 = callKakao_(refreshed);
+            Logger.log("카카오 알림 2차 응답: " + resp2.getResponseCode() + " / " + resp2.getContentText());
+        }
     }
 }
 
