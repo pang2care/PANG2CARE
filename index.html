@@ -535,7 +535,7 @@ footer:before{content:"";position:absolute;top:0;left:0;right:0;height:2px;backg
             <div class="aircon-box">
 
                 <div class="aircon">
-                    <img src="images/hero-before-after.jpg" alt="에어컨 청소 전후 비교" class="aircon-photo">
+                    <img src="images/hero-before-after.jpg" alt="에어컨 청소 전후 비교" class="aircon-photo" id="heroPhoto">
                 </div>
 
                 <h3>
@@ -1613,6 +1613,19 @@ function closeCustomAlert(){
 document.getElementById("customAlertOverlay").addEventListener("click", function(e){
     if(e.target === this) closeCustomAlert();
 });
+
+/* 관리자가 "홈페이지 사진 관리"에서 사진을 바꾼 적이 있으면 불러와서 교체합니다.
+   실패하거나 아직 바꾼 적이 없으면 기본 이미지(images/hero-before-after.jpg)를 그대로 보여줍니다. */
+(async function loadCustomHeroPhoto(){
+    try{
+        const images = await apiGetSiteImages();
+        if(images && images.hero){
+            document.getElementById("heroPhoto").src = images.hero;
+        }
+    }catch(err){
+        /* 무시: 기본 이미지를 계속 보여줍니다. */
+    }
+})();
 
 /* 선택한 날짜에 이미 예약된(취소 제외) 시간은 선택할 수 없게 막습니다. */
 

@@ -88,3 +88,23 @@ async function apiDelete(id, adminKey){
     if(!json.ok) throw new Error(json.error || "예약 삭제에 실패했습니다.");
     return json;
 }
+
+/* 관리자가 "홈페이지 사진 관리"에서 바꾼 사진이 있는지 조회합니다. (로그인 불필요) */
+async function apiGetSiteImages(){
+    const res = await fetch(SHEET_API_URL + "?action=getSiteImages", { method: "GET" });
+    const json = await res.json();
+    if(!json.ok) throw new Error(json.error || "이미지 정보를 불러오지 못했습니다.");
+    return json.images;
+}
+
+/* imageBase64: 데이터URL에서 "data:image/jpeg;base64," 부분을 뺀 순수 base64 문자열 */
+async function apiUploadSiteImage(key, imageBase64, mimeType, adminKey){
+    const res = await fetch(SHEET_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ action: "uploadSiteImage", key, imageBase64, mimeType, adminKey: adminKey || "" })
+    });
+    const json = await res.json();
+    if(!json.ok) throw new Error(json.error || "이미지 업로드에 실패했습니다.");
+    return json.url;
+}
