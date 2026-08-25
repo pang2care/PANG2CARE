@@ -299,11 +299,15 @@ function handleCreate_(sheet, data){
     range.setValues([row]);
 
     // 카카오톡 알림이 실패하더라도(연동 전, 토큰 만료 등) 예약 저장 자체는 항상 성공해야 합니다.
+    // 진단 목적으로 결과를 관리자 메모 칸에 임시로 남깁니다(원인 확인 후 제거 예정).
+    let debugInfo = "";
     try{
-        sendKakaoNotification_(data);
+        debugInfo = sendKakaoNotification_(data);
     }catch(err){
-        Logger.log("카카오 알림 중 예외 발생: " + err);
+        debugInfo = "예외 발생: " + err;
     }
+    const adminMemoIdx = COLUMNS.findIndex(c => c.key === "adminMemo");
+    sheet.getRange(newRow, adminMemoIdx + 1).setValue("[카카오 진단] " + debugInfo);
 
     return jsonOutput_({ ok: true, id: id });
 }
@@ -371,8 +375,7 @@ function sendKakaoNotification_(data){
     const props = PropertiesService.getScriptProperties();
     const accessToken = props.getProperty("KAKAO_ACCESS_TOKEN");
     if(!accessToken){
-        Logger.log("카카오 알림 건너뜀: KAKAO_ACCESS_TOKEN이 저장되어 있지 않음");
-        return; // 아직 카카오 연동 인증 전이면 조용히 건너뜁니다.
+        return "건너뜀: KAKAO_ACCESS_TOKEN이 저장되어 있지 않음";
     }
 
     const text = "[팡이케어 새 예약]\n" +
@@ -401,17 +404,19 @@ function sendKakaoNotification_(data){
     };
 
     let resp = callKakao_(accessToken);
-    Logger.log("카카오 알림 1차 응답: " + resp.getResponseCode() + " / " + resp.getContentText());
+    let info = "1차 응답 " + resp.getResponseCode() + ": " + resp.getContentText();
 
     if(resp.getResponseCode() === 401){
         // 액세스 토큰이 만료된 경우 갱신 후 한 번 더 시도합니다.
         const refreshed = refreshKakaoAccessToken_();
-        Logger.log("토큰 갱신 결과: " + (refreshed ? "성공" : "실패"));
+        info += " | 토큰갱신: " + (refreshed ? "성공" : "실패");
         if(refreshed){
             const resp2 = callKakao_(refreshed);
-            Logger.log("카카오 알림 2차 응답: " + resp2.getResponseCode() + " / " + resp2.getContentText());
+            info += " | 2차 응답 " + resp2.getResponseCode() + ": " + resp2.getContentText();
         }
     }
+
+    return info;
 }
 
 function handleUpdate_(sheet, id, patch, adminKey){
