@@ -299,15 +299,11 @@ function handleCreate_(sheet, data){
     range.setValues([row]);
 
     // 카카오톡 알림이 실패하더라도(연동 전, 토큰 만료 등) 예약 저장 자체는 항상 성공해야 합니다.
-    // 진단 목적으로 결과를 관리자 메모 칸에 임시로 남깁니다(원인 확인 후 제거 예정).
-    let debugInfo = "";
     try{
-        debugInfo = sendKakaoNotification_(data);
+        sendKakaoNotification_(data);
     }catch(err){
-        debugInfo = "예외 발생: " + err;
+        // 무시: 알림은 부가 기능이라 예약 처리를 막지 않습니다.
     }
-    const adminMemoIdx = COLUMNS.findIndex(c => c.key === "adminMemo");
-    sheet.getRange(newRow, adminMemoIdx + 1).setValue("[카카오 진단] " + debugInfo);
 
     return jsonOutput_({ ok: true, id: id });
 }
