@@ -5,6 +5,8 @@ const ADMIN_KEY = "1354";
 
 // 새 예약이 들어오면 카카오톡 "나에게 보내기"로 알림을 보내기 위한 설정입니다.
 // developers.kakao.com 에서 발급받은 REST API 키를 아래에 붙여넣으세요.
+// (주의: "플랫폼 키 > REST API 키 > 클라이언트 시크릿"은 반드시 "사용 안 함"으로 꺼두세요.
+//  이 값은 진짜 비밀번호급 보안 코드라 공개 저장소인 이 코드에는 넣지 않습니다.)
 const KAKAO_REST_API_KEY = "9ab7849cbdc03e9778ae1429f0ea938a";
 
 const COLUMNS = [
