@@ -3,6 +3,10 @@ const SHEET_NAME = "reservations";
 // 관리자만 아는 비밀번호로 반드시 바꿔주세요.
 const ADMIN_KEY = "1354";
 
+// 새 예약이 들어오면 카카오톡 "나에게 보내기"로 알림을 보내기 위한 설정입니다.
+// developers.kakao.com 에서 발급받은 REST API 키를 아래에 붙여넣으세요.
+const KAKAO_REST_API_KEY = "9ab7849cbdc03e9778ae1429f0ea938a";
+
 const COLUMNS = [
     { key: "createdAt", label: "접수시간" },
     { key: "name",       label: "이름" },
@@ -128,6 +132,14 @@ function idColumnIndex_(){
 }
 
 function doGet(e){
+    const params0 = (e && e.parameter) || {};
+
+    // 카카오 로그인 인증 후 돌아오는 콜백(코드에 ?code=... 가 붙어서 옴)입니다.
+    // 최초 1회 카카오 연동 인증을 할 때만 발생하고, 평소 예약 조회 요청에는 없습니다.
+    if(params0.code){
+        return handleKakaoOAuthCallback_(params0.code);
+    }
+
     const sheet = getSheet_();
 
     autoUpdateStatuses_(sheet);
@@ -284,7 +296,112 @@ function handleCreate_(sheet, data){
     range.setNumberFormat("@");
     range.setValues([row]);
 
+    // 카카오톡 알림이 실패하더라도(연동 전, 토큰 만료 등) 예약 저장 자체는 항상 성공해야 합니다.
+    try{
+        sendKakaoNotification_(data);
+    }catch(err){
+        // 무시: 알림은 부가 기능이라 예약 처리를 막지 않습니다.
+    }
+
     return jsonOutput_({ ok: true, id: id });
+}
+
+// ===== 카카오톡 "나에게 보내기" 알림 =====
+// 최초 1회, 아래 authorize URL을 브라우저에서 열어 카카오 로그인으로 인증하면
+// access_token/refresh_token이 스크립트 속성에 저장되고 그 다음부터는 자동으로 동작합니다.
+// authorize URL: https://kauth.kakao.com/oauth/authorize?client_id=REST_API_키&redirect_uri=이_웹앱_URL&response_type=code&scope=talk_message
+
+function kakaoRedirectUri_(){
+    return ScriptApp.getService().getUrl();
+}
+
+function handleKakaoOAuthCallback_(code){
+    const resp = UrlFetchApp.fetch("https://kauth.kakao.com/oauth/token", {
+        method: "post",
+        payload: {
+            grant_type: "authorization_code",
+            client_id: KAKAO_REST_API_KEY,
+            redirect_uri: kakaoRedirectUri_(),
+            code: code
+        },
+        muteHttpExceptions: true
+    });
+
+    const result = JSON.parse(resp.getContentText());
+
+    if(result.access_token){
+        const props = PropertiesService.getScriptProperties();
+        props.setProperty("KAKAO_ACCESS_TOKEN", result.access_token);
+        props.setProperty("KAKAO_REFRESH_TOKEN", result.refresh_token);
+        return HtmlService.createHtmlOutput("카카오톡 알림 연동이 완료되었습니다. 이 창은 닫으셔도 됩니다.");
+    }
+
+    return HtmlService.createHtmlOutput("연동 실패: " + resp.getContentText());
+}
+
+function refreshKakaoAccessToken_(){
+    const props = PropertiesService.getScriptProperties();
+    const refreshToken = props.getProperty("KAKAO_REFRESH_TOKEN");
+    if(!refreshToken) return null;
+
+    const resp = UrlFetchApp.fetch("https://kauth.kakao.com/oauth/token", {
+        method: "post",
+        payload: {
+            grant_type: "refresh_token",
+            client_id: KAKAO_REST_API_KEY,
+            refresh_token: refreshToken
+        },
+        muteHttpExceptions: true
+    });
+
+    const result = JSON.parse(resp.getContentText());
+    if(!result.access_token) return null;
+
+    props.setProperty("KAKAO_ACCESS_TOKEN", result.access_token);
+    if(result.refresh_token){
+        props.setProperty("KAKAO_REFRESH_TOKEN", result.refresh_token);
+    }
+
+    return result.access_token;
+}
+
+function sendKakaoNotification_(data){
+    const props = PropertiesService.getScriptProperties();
+    const accessToken = props.getProperty("KAKAO_ACCESS_TOKEN");
+    if(!accessToken) return; // 아직 카카오 연동 인증 전이면 조용히 건너뜁니다.
+
+    const text = "[팡이케어 새 예약]\n" +
+        "이름: " + (data.name || "") + "\n" +
+        "연락처: " + (data.phone || "") + "\n" +
+        "일시: " + (data.date || "") + " " + (data.time || "") + "\n" +
+        "주소: " + (data.address || "");
+
+    const templateObject = {
+        object_type: "text",
+        text: text,
+        link: {
+            web_url: "https://pang2care.github.io/PANG2CARE/admin.html",
+            mobile_web_url: "https://pang2care.github.io/PANG2CARE/admin.html"
+        },
+        button_title: "관리자 페이지 열기"
+    };
+
+    const callKakao_ = function(token){
+        return UrlFetchApp.fetch("https://kapi.kakao.com/v2/api/talk/memo/default/send", {
+            method: "post",
+            headers: { Authorization: "Bearer " + token },
+            payload: { template_object: JSON.stringify(templateObject) },
+            muteHttpExceptions: true
+        });
+    };
+
+    let resp = callKakao_(accessToken);
+
+    if(resp.getResponseCode() === 401){
+        // 액세스 토큰이 만료된 경우 갱신 후 한 번 더 시도합니다.
+        const refreshed = refreshKakaoAccessToken_();
+        if(refreshed) callKakao_(refreshed);
+    }
 }
 
 function handleUpdate_(sheet, id, patch, adminKey){
