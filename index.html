@@ -195,12 +195,22 @@ section{padding:105px 0}
 .service-card p{font-size:14px;color:var(--muted);line-height:1.75}
 .service-tag{display:inline-block;align-self:flex-start;margin-top:auto;padding:5px 10px;background:#edfafa;color:var(--cyan-2);border-radius:999px;font-size:11px;font-weight:850}
 
-/* WHY */
+/* WHY
+   배경 사진(images/whybox-bg.jpg)은 히어로와 같은 Unsplash License 사진(출처 표기 없이
+   상업적 사용 가능)을 다른 영역으로 크롭한 것. 중앙 정렬 문구 대비를 위해 어두운
+   그라데이션을 사진 위에 얹음. */
 .why-grid{display:grid;grid-template-columns:1fr 1fr;gap:70px;align-items:center}
 .why-box{
   min-height:390px;border-radius:28px;padding:40px;display:flex;align-items:center;justify-content:center;
-  color:#fff;background:linear-gradient(145deg,#071d2b,#0a5265);position:relative;overflow:hidden;
-  box-shadow:var(--shadow-lg)
+  color:#fff;position:relative;overflow:hidden;box-shadow:var(--shadow-lg);
+  background-color:#071d2b;
+  background-image:
+    radial-gradient(circle at 50% 50%,rgba(6,20,31,.55) 0%,rgba(6,20,31,.82) 100%),
+    linear-gradient(145deg,rgba(7,29,43,.55),rgba(10,82,101,.4)),
+    url('images/whybox-bg.jpg');
+  background-size:cover,cover,cover;
+  background-position:center,center,center;
+  background-repeat:no-repeat;
 }
 .why-box:before{content:"";position:absolute;width:310px;height:310px;border-radius:50%;right:-120px;top:-120px;border:1px solid rgba(25,199,216,.3);box-shadow:0 0 0 35px rgba(25,199,216,.04),0 0 0 75px rgba(25,199,216,.025)}
 .why-box-inner{text-align:center;position:relative;z-index:1}
