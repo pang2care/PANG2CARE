@@ -88,3 +88,35 @@ async function apiDelete(id, adminKey){
     if(!json.ok) throw new Error(json.error || "예약 삭제에 실패했습니다.");
     return json;
 }
+
+/* 관리자가 admin.html "후기 등록"에서 직접 추가하는 고객 후기.
+   index.html에는 로그인 없이도 보여야 해서 조회는 인증 없이 열어두고,
+   등록/삭제만 adminKey로 보호합니다. */
+async function apiListReviews(){
+    const res = await fetch(SHEET_API_URL + "?resource=reviews", { method: "GET" });
+    const json = await res.json();
+    if(!json.ok) throw new Error(json.error || "후기 목록을 불러오지 못했습니다.");
+    return json.reviews;
+}
+
+async function apiCreateReview(data){
+    const res = await fetch(SHEET_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ action: "createReview", data })
+    });
+    const json = await res.json();
+    if(!json.ok) throw new Error(json.error || "후기 등록에 실패했습니다.");
+    return json.id;
+}
+
+async function apiDeleteReview(id, adminKey){
+    const res = await fetch(SHEET_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ action: "deleteReview", id, adminKey: adminKey || "" })
+    });
+    const json = await res.json();
+    if(!json.ok) throw new Error(json.error || "후기 삭제에 실패했습니다.");
+    return json;
+}

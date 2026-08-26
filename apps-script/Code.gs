@@ -142,6 +142,12 @@ function doGet(e){
         return handleKakaoOAuthCallback_(params0.code);
     }
 
+    // 관리자가 admin.html "후기 등록"에서 추가한 후기 목록입니다.
+    // index.html에서도 로그인 없이 불러와 보여줘야 해서 별도 인증 없이 공개합니다.
+    if(params0.resource === "reviews"){
+        return handleReviewList_();
+    }
+
     const sheet = getSheet_();
 
     autoUpdateStatuses_(sheet);
@@ -255,6 +261,15 @@ function rowToObject_(row){
 
 function doPost(e){
     const body = JSON.parse(e.postData.contents);
+
+    if(body.action === "createReview"){
+        return handleReviewCreate_(body.data);
+    }
+
+    if(body.action === "deleteReview"){
+        return handleReviewDelete_(body.id, body.adminKey);
+    }
+
     const sheet = getSheet_();
 
     if(body.action === "create"){
@@ -469,6 +484,100 @@ function findRowById_(sheet, id){
     }
 
     return -1;
+}
+
+// ===== 관리자가 등록하는 고객 후기 (admin.html "후기 등록") =====
+// 기존 "reservations" 시트와 별개로 "reviews" 시트를 자동 생성해 쌓습니다.
+// 등록해도 기존 후기는 절대 지워지지 않고, 삭제 버튼을 눌러야만 지워집니다.
+
+const REVIEW_SHEET_NAME = "reviews";
+
+const REVIEW_COLUMNS = [
+    { key: "id",        label: "id" },
+    { key: "createdAt", label: "등록일시" },
+    { key: "author",    label: "작성자" },
+    { key: "rating",    label: "별점" },
+    { key: "content",   label: "내용" }
+];
+
+function getReviewSheet_(){
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = ss.getSheetByName(REVIEW_SHEET_NAME);
+
+    if(!sheet){
+        sheet = ss.insertSheet(REVIEW_SHEET_NAME);
+        sheet.appendRow(REVIEW_COLUMNS.map(c => c.label));
+        sheet.setFrozenRows(1);
+    }
+
+    return sheet;
+}
+
+function reviewIdColumnIndex_(){
+    return REVIEW_COLUMNS.findIndex(c => c.key === "id");
+}
+
+function handleReviewList_(){
+    const sheet = getReviewSheet_();
+    const rows = sheet.getDataRange().getValues();
+    const idIdx = reviewIdColumnIndex_();
+
+    const list = rows.slice(1)
+        .filter(row => row[idIdx])
+        .map(row => {
+            const obj = {};
+            REVIEW_COLUMNS.forEach((c,i) => { obj[c.key] = row[i]; });
+            obj.rating = Number(obj.rating) || 5;
+            return obj;
+        });
+
+    return jsonOutput_({ ok: true, reviews: list });
+}
+
+function handleReviewCreate_(data){
+    const required = ["author", "content"];
+    const missing = required.filter(key => !(data && String(data[key] || "").trim()));
+
+    if(missing.length > 0){
+        return jsonOutput_({ ok: false, error: "필수 항목이 누락되었습니다: " + missing.join(", ") });
+    }
+
+    const sheet = getReviewSheet_();
+    const id = Utilities.getUuid();
+
+    const row = REVIEW_COLUMNS.map(c => {
+        if(c.key === "id") return id;
+        if(c.key === "createdAt") return nowText_();
+        if(c.key === "rating") return Number(data.rating) || 5;
+        return (data && data[c.key] !== undefined) ? data[c.key] : "";
+    });
+
+    sheet.appendRow(row);
+
+    return jsonOutput_({ ok: true, id: id });
+}
+
+function handleReviewDelete_(id, adminKey){
+    if(adminKey !== ADMIN_KEY){
+        return jsonOutput_({ ok: false, error: "관리자 인증이 필요합니다." });
+    }
+
+    const sheet = getReviewSheet_();
+    const lastRow = sheet.getLastRow();
+    if(lastRow < 2) return jsonOutput_({ ok: false, error: "후기를 찾을 수 없습니다." });
+
+    const idIdx = reviewIdColumnIndex_();
+    const ids = sheet.getRange(2, idIdx+1, lastRow-1, 1).getValues();
+
+    let rowIndex = -1;
+    for(let i=0;i<ids.length;i++){
+        if(ids[i][0] === id){ rowIndex = i+2; break; }
+    }
+
+    if(rowIndex === -1) return jsonOutput_({ ok: false, error: "후기를 찾을 수 없습니다." });
+
+    sheet.deleteRow(rowIndex);
+    return jsonOutput_({ ok: true });
 }
 
 function jsonOutput_(obj){

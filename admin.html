@@ -1225,6 +1225,11 @@ textarea:focus{
             <button class="active" data-view="calendar">📅 예약 캘린더</button>
         </div>
 
+        <div class="menu-title">고객 후기</div>
+        <div class="menu">
+            <button data-view="reviewwrite">📝 후기 등록</button>
+        </div>
+
         <div class="menu-title">AI 마케팅</div>
         <div class="menu">
             <button data-view="dashboard">📊 AI 대시보드</button>
@@ -1319,6 +1324,46 @@ textarea:focus{
                 <div id="analysisResult" class="ai-result" style="display:block;"></div>
             </div>
 
+        </section>
+
+
+        <!-- VIEW: 후기 등록 -->
+
+        <section id="view-reviewwrite" class="view">
+            <div class="panel">
+                <h2>📝 후기 등록</h2>
+                <div class="panel-sub">당근/네이버 등에 실제로 달린 후기를 그대로 옮겨 적어 등록하면, 홈페이지 고객 후기 영역에 기존 후기들과 함께 무작위로 섞여 노출됩니다. 등록해도 기존 후기는 지워지지 않고 계속 쌓입니다.</div>
+
+                <div class="ai-form">
+                    <div><label>작성자 표시명</label><input id="reviewWriteAuthor" placeholder="예: 수연맘 고객님 (당근리뷰)"></div>
+                    <div>
+                        <label>별점</label>
+                        <select id="reviewWriteRating">
+                            <option value="5">★★★★★ (5)</option>
+                            <option value="4.5">★★★★☆ (4.5)</option>
+                            <option value="4">★★★★☆ (4)</option>
+                            <option value="3.5">★★★☆☆ (3.5)</option>
+                            <option value="3">★★★☆☆ (3)</option>
+                        </select>
+                    </div>
+                    <div class="full">
+                        <label>후기 내용</label>
+                        <textarea id="reviewWriteContent" placeholder="예: 청소 깔끔하게 해주시고 마무리 정리도 잘해주세요."></textarea>
+                    </div>
+                </div>
+
+                <div class="ai-toolbar">
+                    <button class="btn btn-primary" onclick="submitReviewWrite()">➕ 후기 등록하기</button>
+                </div>
+
+                <div id="reviewWriteResult" class="ai-result"></div>
+            </div>
+
+            <div class="panel">
+                <h2>등록된 후기 목록</h2>
+                <div class="panel-sub">여기서 삭제한 후기는 홈페이지에서도 바로 사라집니다.</div>
+                <div id="reviewWriteList"></div>
+            </div>
         </section>
 
 
@@ -1896,6 +1941,7 @@ function openView(id){
     if(id === "blog" || id === "content") prefillAiForms();
     if(id === "blog"){ updateBlogModeUI(); renderPublishQueue(); }
     if(id === "promovideo"){ populatePromoMusicSelect(); ensurePromoMusicLoaded(); }
+    if(id === "reviewwrite") loadAdminReviews();
 }
 
 /* =========================
@@ -1969,6 +2015,82 @@ async function loadReservations(){
         }else{
             console.warn("예약 목록 새로고침 실패:", err);
         }
+    }
+}
+
+/* =========================
+   후기 등록 (admin.html에서 직접 등록하는 고객 후기)
+========================= */
+
+let adminReviews = [];
+
+async function loadAdminReviews(){
+    const wrap = document.getElementById("reviewWriteList");
+    wrap.innerHTML = `<div class="ai-note">불러오는 중...</div>`;
+
+    try{
+        adminReviews = await apiListReviews();
+        renderAdminReviewList();
+    }catch(err){
+        wrap.innerHTML = `<div class="ai-note">후기 목록을 불러오지 못했습니다: ${escapeHtml(err.message)}</div>`;
+    }
+}
+
+function renderAdminReviewList(){
+    const wrap = document.getElementById("reviewWriteList");
+
+    if(!adminReviews.length){
+        wrap.innerHTML = `<div class="ai-note">아직 등록한 후기가 없습니다.</div>`;
+        return;
+    }
+
+    const sorted = [...adminReviews].sort((a,b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+
+    wrap.innerHTML = sorted.map(r => `
+        <div class="queue-item">
+            <div class="queue-item-head">
+                <b>${"★".repeat(Math.round(r.rating))}${"☆".repeat(5 - Math.round(r.rating))} ${escapeHtml(r.author)}</b>
+                <span class="queue-item-date">${escapeHtml(r.createdAt)}</span>
+                <button type="button" class="queue-delete" onclick="deleteAdminReview('${r.id}')" title="삭제">×</button>
+            </div>
+            <div>${escapeHtml(r.content)}</div>
+        </div>
+    `).join("");
+}
+
+async function submitReviewWrite(){
+    const author = document.getElementById("reviewWriteAuthor").value.trim();
+    const content = document.getElementById("reviewWriteContent").value.trim();
+    const rating = document.getElementById("reviewWriteRating").value;
+    const resultBox = document.getElementById("reviewWriteResult");
+
+    if(!author || !content){
+        resultBox.style.display = "block";
+        resultBox.innerText = "작성자 표시명과 후기 내용을 모두 입력해주세요.";
+        return;
+    }
+
+    try{
+        await apiCreateReview({ author, content, rating });
+        document.getElementById("reviewWriteAuthor").value = "";
+        document.getElementById("reviewWriteContent").value = "";
+        resultBox.style.display = "block";
+        resultBox.innerText = "후기가 등록되었습니다. 홈페이지 고객 후기 영역에 다른 후기들과 함께 노출됩니다.";
+        loadAdminReviews();
+    }catch(err){
+        resultBox.style.display = "block";
+        resultBox.innerText = "등록에 실패했습니다: " + err.message;
+    }
+}
+
+async function deleteAdminReview(id){
+    if(!confirm("이 후기를 삭제할까요? 홈페이지에서도 바로 사라집니다.")) return;
+
+    try{
+        await apiDeleteReview(id, getAdminKey());
+        loadAdminReviews();
+    }catch(err){
+        alert("삭제에 실패했습니다: " + err.message);
     }
 }
 

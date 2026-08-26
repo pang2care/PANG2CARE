@@ -1794,11 +1794,12 @@ document.querySelectorAll(".rotating-photo").forEach(img => {
 });
 
 /* 고객 후기 자동 순환.
-   지금은 안내 문구 3개뿐이라 화면에는 변화가 없지만,
-   실제 후기가 들어올 때마다 아래 reviews 배열에 항목을 추가해두면
-   3개를 초과하는 순간부터 5초마다 카드 3장이 통째로 다음 후기들로 순환됩니다. */
+   아래 baseReviews는 당근 실제 후기 원문을 다듬은 것(가짜 후기 없음)이고,
+   여기에 admin.html "후기 등록"에서 관리자가 추가한 후기(apiListReviews)를 합쳐서
+   매번 무작위로 섞어 보여줍니다. 3개를 초과하는 순간부터 5초마다 카드 3장이
+   통째로 다음 후기들로 순환되고, 한 바퀴를 다 돌면 다시 섞어서 순서가 바뀝니다. */
 
-const reviews = [
+const baseReviews = [
     { stars: 5, text: "청소 깔끔하게 해주시고 마무리 정리도 잘해주세요.", author: "수연맘 고객님 (당근 단골리뷰)" },
     { stars: 4, text: "사장님 시간 약속 잘 지키시고 청소 꼼꼼하게 해주세요. 부모님댁에도 부탁드리려고요.", author: "아름다운세상 고객님 (당근리뷰)" },
     { stars: 5, text: "청소 정말 잘해주시네요.", author: "제주싸나이 고객님 (당근 단골리뷰)" },
@@ -1883,11 +1884,30 @@ function renderReviewCard(card, review){
     card.querySelector("small").textContent = review.author;
 }
 
-if(reviews.length > reviewCards.length && reviewCards.length > 0){
+function shuffleReviews_(arr){
+    const a = arr.slice();
+    for(let i = a.length - 1; i > 0; i--){
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+}
+
+let reviews = shuffleReviews_(baseReviews);
+let reviewRotationTimer = null;
+
+function startReviewRotation(){
+    if(reviewRotationTimer) clearInterval(reviewRotationTimer);
+    if(!(reviews.length > reviewCards.length && reviewCards.length > 0)) return;
+
     let start = 0;
 
-    setInterval(() => {
-        start = (start + reviewCards.length) % reviews.length;
+    reviewRotationTimer = setInterval(() => {
+        start += reviewCards.length;
+        if(start >= reviews.length){
+            start = 0;
+            reviews = shuffleReviews_(reviews);
+        }
 
         reviewCards.forEach(card => card.classList.add("fading"));
 
@@ -1898,6 +1918,36 @@ if(reviews.length > reviewCards.length && reviewCards.length > 0){
             });
         }, 500);
     }, 5000);
+}
+
+reviewCards.forEach((card, i) => {
+    if(reviews[i]) renderReviewCard(card, reviews[i]);
+});
+
+startReviewRotation();
+
+// 관리자가 admin.html "후기 등록"에서 추가한 후기를 불러와 기존 후기와 합칩니다.
+// 실패해도(오프라인, Apps Script 오류 등) 기존 73개 후기는 그대로 노출됩니다.
+if(typeof apiListReviews === "function"){
+    apiListReviews().then(adminReviews => {
+        if(!adminReviews || !adminReviews.length) return;
+
+        const mapped = adminReviews.map(r => ({
+            stars: Number(r.rating) || 5,
+            text: r.content,
+            author: r.author
+        }));
+
+        reviews = shuffleReviews_(baseReviews.concat(mapped));
+
+        reviewCards.forEach((card, i) => {
+            if(reviews[i]) renderReviewCard(card, reviews[i]);
+        });
+
+        startReviewRotation();
+    }).catch(err => {
+        console.warn("관리자 등록 후기를 불러오지 못했습니다:", err);
+    });
 }
 
 </script>
