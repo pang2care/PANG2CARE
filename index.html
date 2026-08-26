@@ -146,6 +146,30 @@ header{
 .hero-blob.b3{width:150px;height:150px;top:38%;right:32%;background:#b8ef65;animation-delay:-2s}
 @keyframes floatBlob{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-18px,22px) scale(1.08)}}
 
+/* 물이 흐르는 듯한 배경 연출 (이미지 파일 없이 순수 CSS/SVG). hero-blob과 같은 장식 레이어라
+   레이아웃/박스 크기에는 영향을 주지 않고 hero 배경 위에만 얹힘. */
+.hero-water{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:1}
+.hero-streak{
+  position:absolute;top:-25%;height:150%;width:90px;
+  background:linear-gradient(180deg,transparent,rgba(255,255,255,.09) 35%,rgba(120,234,243,.18) 50%,rgba(255,255,255,.09) 65%,transparent);
+  filter:blur(6px);transform:rotate(-18deg);
+  animation:streakDrift 9s ease-in-out infinite;
+}
+.hero-streak.s1{left:56%}
+.hero-streak.s2{left:70%;width:55px;opacity:.7;animation-delay:-3s}
+.hero-streak.s3{left:84%;width:115px;opacity:.5;animation-delay:-6s}
+@keyframes streakDrift{
+  0%,100%{transform:rotate(-18deg) translateX(0)}
+  50%{transform:rotate(-18deg) translateX(-26px)}
+}
+.hero-wave{position:absolute;left:-10%;width:120%;height:auto;animation:waveDrift 18s ease-in-out infinite}
+.hero-wave.w1{bottom:-4%;opacity:.16}
+.hero-wave.w2{bottom:3%;opacity:.09;animation-duration:23s;animation-delay:-6s}
+@keyframes waveDrift{
+  0%,100%{transform:translateX(0)}
+  50%{transform:translateX(-4%)}
+}
+
 /* TRUST */
 .trust{position:relative;z-index:5}
 .trust-grid{
@@ -486,6 +510,18 @@ footer:before{content:"";position:absolute;top:0;left:0;right:0;height:2px;backg
     <div class="hero-blob b1"></div>
     <div class="hero-blob b2"></div>
     <div class="hero-blob b3"></div>
+
+    <div class="hero-water" aria-hidden="true">
+        <div class="hero-streak s1"></div>
+        <div class="hero-streak s2"></div>
+        <div class="hero-streak s3"></div>
+        <svg class="hero-wave w1" viewBox="0 0 1440 200" preserveAspectRatio="none">
+            <path fill="#78eaf3" d="M0,90 C240,150 480,30 720,90 C960,150 1200,30 1440,90 L1440,200 L0,200 Z"/>
+        </svg>
+        <svg class="hero-wave w2" viewBox="0 0 1440 200" preserveAspectRatio="none">
+            <path fill="#ffffff" d="M0,110 C260,50 520,160 800,100 C1060,45 1260,140 1440,90 L1440,200 L0,200 Z"/>
+        </svg>
+    </div>
 
     <div class="container"
          style="display:flex;align-items:center;gap:40px;">
