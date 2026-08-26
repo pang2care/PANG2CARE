@@ -1712,6 +1712,22 @@ textarea:focus{
                 </div>
 
                 <div class="ai-note" id="siteHeroStatus">※ 사진은 가로 1600px 기준으로 자동 압축되어 저장됩니다. 사진을 고르면 먼저 미리보기만 보이고, "홈페이지에 저장"을 눌러야 실제로 반영됩니다.</div>
+
+                <div class="ai-form" style="margin-top:28px;padding-top:22px;border-top:1px solid #e6ebf2;">
+                    <div class="full">
+                        <label>📸 작업현황 사진 업로드 (여러 장 한 번에 선택 가능)</label>
+                        <label class="photo-picker" for="galleryPhotoInput">
+                            <span id="galleryPhotoSpan">📷 클릭해서 사진을 선택하세요 (여러 장 선택 가능)</span>
+                            <input type="file" id="galleryPhotoInput" accept="image/*" multiple onchange="handleGalleryPhotoUpload(event)">
+                        </label>
+                        <div class="ai-note" id="galleryUploadStatus">※ 선택하면 가로 1600px 기준으로 자동 압축되어 바로 업로드됩니다. 업로드된 사진은 기존 작업현황 사진들과 합쳐져, 홈페이지 방문할 때마다 무작위로 섞여서 노출됩니다.</div>
+                    </div>
+
+                    <div class="full">
+                        <label>업로드된 작업현황 사진 (<span id="galleryPhotoCount">0</span>장)</label>
+                        <div class="photo-grid" id="galleryPhotoGrid"></div>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -1968,7 +1984,7 @@ function openView(id){
     });
 
     if(id === "dashboard") renderAiDashboard();
-    if(id === "siteimages") loadSiteHeroCurrent();
+    if(id === "siteimages"){ loadSiteHeroCurrent(); loadGalleryPhotos(); }
     if(id === "settings") fillSettingsForm();
     if(id === "blog" || id === "content") prefillAiForms();
     if(id === "blog"){ updateBlogModeUI(); renderPublishQueue(); }
@@ -2955,6 +2971,111 @@ async function loadSiteHeroCurrent(){
             : `<span style="font-size:12px;color:#94a3b8;">아직 바꾼 적 없음 — 기본 이미지가 사용되고 있어요.</span>`;
     }catch(err){
         grid.innerHTML = `<span style="font-size:12px;color:#94a3b8;">현재 사진을 불러오지 못했습니다. (${escapeHtml(err.message)})</span>`;
+    }
+}
+
+/* =========================
+   작업현황 사진 업로드 — 관리자가 자유롭게 올린 작업현황 사진.
+   업로드하는 즉시 기존 작업현황 사진들과 합쳐져, 홈페이지 방문할 때마다 무작위로 섞여 노출됨.
+   삭제하기 전까지는 계속 쌓임(구글 드라이브 + 시트에 보관).
+========================= */
+
+let galleryPhotos = [];
+
+async function loadGalleryPhotos(){
+    const grid = document.getElementById("galleryPhotoGrid");
+    grid.innerHTML = `<span style="font-size:12px;color:#94a3b8;">불러오는 중...</span>`;
+
+    try{
+        galleryPhotos = await apiListGalleryPhotos();
+        renderGalleryPhotoGrid();
+    }catch(err){
+        grid.innerHTML = `<span style="font-size:12px;color:#94a3b8;">목록을 불러오지 못했습니다. (${escapeHtml(err.message)})</span>`;
+    }
+}
+
+function renderGalleryPhotoGrid(){
+    const grid = document.getElementById("galleryPhotoGrid");
+    document.getElementById("galleryPhotoCount").innerText = galleryPhotos.length;
+
+    if(!galleryPhotos.length){
+        grid.innerHTML = `<span style="font-size:12px;color:#94a3b8;">아직 업로드한 사진이 없습니다.</span>`;
+        return;
+    }
+
+    const sorted = [...galleryPhotos].sort((a,b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+
+    grid.innerHTML = sorted.map(p => `
+        <div class="photo-thumb">
+            <img src="${p.url}" alt="작업현황 사진">
+            <button type="button" onclick="deleteGalleryPhoto('${p.id}')" title="삭제">×</button>
+        </div>
+    `).join("");
+}
+
+function compressImageFile_(file, maxW){
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            const img = new Image();
+            img.onload = () => {
+                const scale = Math.min(1, maxW / img.width);
+                const w = Math.round(img.width * scale);
+                const h = Math.round(img.height * scale);
+
+                const canvas = document.createElement("canvas");
+                canvas.width = w;
+                canvas.height = h;
+                canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+
+                resolve(canvas.toDataURL("image/jpeg", 0.85));
+            };
+            img.onerror = () => reject(new Error("이미지를 읽지 못했습니다."));
+            img.src = reader.result;
+        };
+        reader.onerror = () => reject(new Error("파일을 읽지 못했습니다."));
+        reader.readAsDataURL(file);
+    });
+}
+
+async function handleGalleryPhotoUpload(event){
+    const files = Array.from(event.target.files || []);
+    event.target.value = "";
+    if(!files.length) return;
+
+    const status = document.getElementById("galleryUploadStatus");
+    const adminKey = getAdminKey();
+
+    let done = 0;
+    let failed = 0;
+
+    for(let i=0; i<files.length; i++){
+        status.innerText = `업로드 중... (${i+1}/${files.length})`;
+        try{
+            const dataUrl = await compressImageFile_(files[i], 1600);
+            const base64 = dataUrl.split(",")[1];
+            await apiUploadGalleryPhoto(base64, "image/jpeg", adminKey);
+            done++;
+        }catch(err){
+            failed++;
+        }
+    }
+
+    status.innerText = failed
+        ? `✅ ${done}장 업로드 완료 (${failed}장 실패). 홈페이지 작업현황 갤러리에 바로 반영됩니다.`
+        : `✅ ${done}장 업로드 완료! 홈페이지 작업현황 갤러리에 바로 반영됩니다.`;
+
+    loadGalleryPhotos();
+}
+
+async function deleteGalleryPhoto(id){
+    if(!confirm("이 작업현황 사진을 삭제할까요? 홈페이지에서도 바로 사라집니다.")) return;
+
+    try{
+        await apiDeleteGalleryPhoto(id, getAdminKey());
+        loadGalleryPhotos();
+    }catch(err){
+        alert("삭제에 실패했습니다: " + err.message);
     }
 }
 

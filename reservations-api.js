@@ -140,3 +140,36 @@ async function apiUploadSiteImage(key, imageBase64, mimeType, adminKey){
     if(!json.ok) throw new Error(json.error || "이미지 업로드에 실패했습니다.");
     return json.url;
 }
+
+/* 관리자가 "작업현황 사진 업로드"에서 자유롭게 추가한 작업현황 사진 목록.
+   index.html에서도 로그인 없이 불러와 보여줘야 해서 조회는 인증 없이 열어두고,
+   등록/삭제만 adminKey로 보호합니다. */
+async function apiListGalleryPhotos(){
+    const res = await fetch(SHEET_API_URL + "?resource=galleryPhotos", { method: "GET" });
+    const json = await res.json();
+    if(!json.ok) throw new Error(json.error || "작업현황 사진을 불러오지 못했습니다.");
+    return json.photos;
+}
+
+/* imageBase64: 데이터URL에서 "data:image/jpeg;base64," 부분을 뺀 순수 base64 문자열 */
+async function apiUploadGalleryPhoto(imageBase64, mimeType, adminKey){
+    const res = await fetch(SHEET_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ action: "uploadGalleryPhoto", imageBase64, mimeType, adminKey: adminKey || "" })
+    });
+    const json = await res.json();
+    if(!json.ok) throw new Error(json.error || "사진 업로드에 실패했습니다.");
+    return json;
+}
+
+async function apiDeleteGalleryPhoto(id, adminKey){
+    const res = await fetch(SHEET_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ action: "deleteGalleryPhoto", id, adminKey: adminKey || "" })
+    });
+    const json = await res.json();
+    if(!json.ok) throw new Error(json.error || "사진 삭제에 실패했습니다.");
+    return json;
+}

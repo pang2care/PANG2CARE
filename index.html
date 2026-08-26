@@ -1837,36 +1837,78 @@ const revealObserver = new IntersectionObserver((entries) => {
 
 revealItems.forEach(el => revealObserver.observe(el));
 
-/* 작업현황(갤러리) 사진을 5초마다 여러 장으로 자동 전환합니다. */
+/* 작업현황(갤러리) 사진을 5초마다 여러 장으로 자동 전환합니다.
+   기존에 등록된 사진들과 admin.html "작업현황 사진 업로드"에서 관리자가 추가한 사진을
+   하나의 풀로 합친 뒤 접속할 때마다 무작위로 섞어서 6개 카드에 나눠 보여줍니다.
+   그래서 홈페이지에 들어올 때마다 카드에 뜨는 사진이 매번 달라집니다. */
 
-document.querySelectorAll(".rotating-photo").forEach(img => {
-    let images;
-    try{
-        images = JSON.parse(img.dataset.images || "[]");
-    }catch(err){
-        images = [];
+function shuffleArray_(arr){
+    const a = arr.slice();
+    for(let i = a.length - 1; i > 0; i--){
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
     }
+    return a;
+}
 
-    if(images.length < 2) return;
+const galleryImgs = Array.from(document.querySelectorAll(".rotating-photo"));
 
-    let index = 0;
+const galleryBasePool = shuffleArray_(
+    galleryImgs.flatMap(img => {
+        try{ return JSON.parse(img.dataset.images || "[]"); }
+        catch(err){ return []; }
+    })
+);
 
-    setInterval(() => {
-        const nextIndex = (index + 1) % images.length;
-        const preload = new Image();
+let galleryTimers = [];
 
-        preload.onload = () => {
-            img.classList.add("fading");
-            setTimeout(() => {
-                img.src = images[nextIndex];
-                index = nextIndex;
-                img.classList.remove("fading");
-            }, 500);
-        };
+function startGalleryRotation_(pool){
+    galleryTimers.forEach(t => clearInterval(t));
+    galleryTimers = [];
 
-        preload.src = images[nextIndex];
-    }, 5000);
-});
+    if(!pool.length) return;
+
+    galleryImgs.forEach((img, cardIndex) => {
+        // 카드마다 풀에서 서로 다른 지점부터 시작하도록 어긋나게 둡니다.
+        let index = cardIndex % pool.length;
+        img.src = pool[index];
+
+        if(pool.length < 2) return;
+
+        const timer = setInterval(() => {
+            const nextIndex = (index + 1) % pool.length;
+            const preload = new Image();
+
+            preload.onload = () => {
+                img.classList.add("fading");
+                setTimeout(() => {
+                    img.src = pool[nextIndex];
+                    index = nextIndex;
+                    img.classList.remove("fading");
+                }, 500);
+            };
+
+            preload.src = pool[nextIndex];
+        }, 5000);
+
+        galleryTimers.push(timer);
+    });
+}
+
+startGalleryRotation_(galleryBasePool);
+
+// 관리자가 admin.html "작업현황 사진 업로드"에서 추가한 사진을 불러와 기존 사진과 합칩니다.
+// 실패해도(오프라인, Apps Script 오류 등) 기존 사진들은 그대로 노출됩니다.
+if(typeof apiListGalleryPhotos === "function"){
+    apiListGalleryPhotos().then(adminPhotos => {
+        if(!adminPhotos || !adminPhotos.length) return;
+
+        const combined = shuffleArray_(galleryBasePool.concat(adminPhotos.map(p => p.url)));
+        startGalleryRotation_(combined);
+    }).catch(err => {
+        console.warn("관리자가 업로드한 작업현황 사진을 불러오지 못했습니다:", err);
+    });
+}
 
 /* 고객 후기 자동 순환.
    아래 baseReviews는 당근 실제 후기 원문을 다듬은 것(가짜 후기 없음)이고,

@@ -148,6 +148,12 @@ function doGet(e){
         return handleReviewList_();
     }
 
+    // 관리자가 admin.html "작업현황 사진 업로드"에서 추가한 작업현황 사진 목록입니다.
+    // index.html에서도 로그인 없이 불러와 보여줘야 해서 별도 인증 없이 공개합니다.
+    if(params0.resource === "galleryPhotos"){
+        return handleGalleryList_();
+    }
+
     // 홈페이지에서 "관리자가 바꾼 사진이 있는지" 조회할 때 사용합니다. (로그인 불필요, 공개 정보)
     if(params0.action === "getSiteImages"){
         return handleGetSiteImages_();
@@ -291,6 +297,14 @@ function doPost(e){
 
     if(body.action === "uploadSiteImage"){
         return handleUploadSiteImage_(body.key, body.imageBase64, body.mimeType, body.adminKey);
+    }
+
+    if(body.action === "uploadGalleryPhoto"){
+        return handleGalleryUpload_(body.imageBase64, body.mimeType, body.adminKey);
+    }
+
+    if(body.action === "deleteGalleryPhoto"){
+        return handleGalleryDelete_(body.id, body.adminKey);
     }
 
     return jsonOutput_({ ok: false, error: "알 수 없는 요청입니다." });
@@ -660,6 +674,131 @@ function handleUploadSiteImage_(key, imageBase64, mimeType, adminKey){
     }catch(err){
         return jsonOutput_({ ok: false, error: "업로드 실패: " + err.message });
     }
+}
+
+// ===== 작업현황 갤러리 사진 (관리자 페이지 "작업현황 사진 업로드"에서 사용) =====
+// 관리자가 자유롭게 올린 사진이 구글 드라이브에 계속 쌓이고(삭제 전까진 유지),
+// 홈페이지 작업현황 갤러리는 기존 사진과 이 사진들을 합쳐 접속할 때마다 무작위로 섞어 보여줍니다.
+
+const GALLERY_SHEET_NAME = "gallery_photos";
+
+const GALLERY_COLUMNS = [
+    { key: "id",        label: "id" },
+    { key: "createdAt", label: "등록일시" },
+    { key: "url",       label: "사진주소" },
+    { key: "fileId",    label: "드라이브파일ID" }
+];
+
+function getGallerySheet_(){
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = ss.getSheetByName(GALLERY_SHEET_NAME);
+
+    if(!sheet){
+        sheet = ss.insertSheet(GALLERY_SHEET_NAME);
+        sheet.appendRow(GALLERY_COLUMNS.map(c => c.label));
+        sheet.setFrozenRows(1);
+    }
+
+    return sheet;
+}
+
+function galleryIdColumnIndex_(){
+    return GALLERY_COLUMNS.findIndex(c => c.key === "id");
+}
+
+function getOrCreateGalleryFolder_(){
+    const props = PropertiesService.getScriptProperties();
+    const folderId = props.getProperty("GALLERY_PHOTOS_FOLDER_ID");
+
+    if(folderId){
+        try{ return DriveApp.getFolderById(folderId); }
+        catch(err){ /* 폴더가 삭제된 경우 아래에서 새로 만듭니다. */ }
+    }
+
+    const folder = DriveApp.createFolder("팡이케어 작업현황 사진");
+    props.setProperty("GALLERY_PHOTOS_FOLDER_ID", folder.getId());
+    return folder;
+}
+
+function handleGalleryList_(){
+    const sheet = getGallerySheet_();
+    const rows = sheet.getDataRange().getValues();
+    const idIdx = galleryIdColumnIndex_();
+
+    const photos = rows.slice(1)
+        .filter(row => row[idIdx])
+        .map(row => {
+            const obj = {};
+            GALLERY_COLUMNS.forEach((c,i) => { obj[c.key] = row[i]; });
+            return { id: obj.id, createdAt: obj.createdAt, url: obj.url };
+        });
+
+    return jsonOutput_({ ok: true, photos: photos });
+}
+
+function handleGalleryUpload_(imageBase64, mimeType, adminKey){
+    if(adminKey !== ADMIN_KEY){
+        return jsonOutput_({ ok: false, error: "관리자 인증이 필요합니다." });
+    }
+
+    if(!imageBase64){
+        return jsonOutput_({ ok: false, error: "이미지 데이터가 없습니다." });
+    }
+
+    try{
+        const folder = getOrCreateGalleryFolder_();
+        const decoded = Utilities.base64Decode(imageBase64);
+        const id = Utilities.getUuid();
+        const blob = Utilities.newBlob(decoded, mimeType || "image/jpeg", "gallery-" + nowText_() + ".jpg");
+        const file = folder.createFile(blob);
+        file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+
+        const url = "https://drive.google.com/thumbnail?id=" + file.getId() + "&sz=w1200";
+
+        const sheet = getGallerySheet_();
+        const row = GALLERY_COLUMNS.map(c => {
+            if(c.key === "id") return id;
+            if(c.key === "createdAt") return nowText_();
+            if(c.key === "url") return url;
+            if(c.key === "fileId") return file.getId();
+            return "";
+        });
+        sheet.appendRow(row);
+
+        return jsonOutput_({ ok: true, id: id, url: url });
+    }catch(err){
+        return jsonOutput_({ ok: false, error: "업로드 실패: " + err.message });
+    }
+}
+
+function handleGalleryDelete_(id, adminKey){
+    if(adminKey !== ADMIN_KEY){
+        return jsonOutput_({ ok: false, error: "관리자 인증이 필요합니다." });
+    }
+
+    const sheet = getGallerySheet_();
+    const lastRow = sheet.getLastRow();
+    if(lastRow < 2) return jsonOutput_({ ok: false, error: "사진을 찾을 수 없습니다." });
+
+    const idIdx = galleryIdColumnIndex_();
+    const fileIdIdx = GALLERY_COLUMNS.findIndex(c => c.key === "fileId");
+    const values = sheet.getRange(2, 1, lastRow-1, GALLERY_COLUMNS.length).getValues();
+
+    let rowIndex = -1;
+    let fileId = null;
+    for(let i=0;i<values.length;i++){
+        if(values[i][idIdx] === id){ rowIndex = i+2; fileId = values[i][fileIdIdx]; break; }
+    }
+
+    if(rowIndex === -1) return jsonOutput_({ ok: false, error: "사진을 찾을 수 없습니다." });
+
+    if(fileId){
+        try{ DriveApp.getFileById(fileId).setTrashed(true); }
+        catch(err){ /* 이미 지워졌거나 못 찾으면 무시하고 계속 진행합니다. */ }
+    }
+
+    sheet.deleteRow(rowIndex);
+    return jsonOutput_({ ok: true });
 }
 
 function jsonOutput_(obj){
