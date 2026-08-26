@@ -148,6 +148,11 @@ function doGet(e){
         return handleReviewList_();
     }
 
+    // 홈페이지에서 "관리자가 바꾼 사진이 있는지" 조회할 때 사용합니다. (로그인 불필요, 공개 정보)
+    if(params0.action === "getSiteImages"){
+        return handleGetSiteImages_();
+    }
+
     const sheet = getSheet_();
 
     autoUpdateStatuses_(sheet);
@@ -282,6 +287,10 @@ function doPost(e){
 
     if(body.action === "delete"){
         return handleDelete_(sheet, body.id, body.adminKey);
+    }
+
+    if(body.action === "uploadSiteImage"){
+        return handleUploadSiteImage_(body.key, body.imageBase64, body.mimeType, body.adminKey);
     }
 
     return jsonOutput_({ ok: false, error: "알 수 없는 요청입니다." });
@@ -578,6 +587,79 @@ function handleReviewDelete_(id, adminKey){
 
     sheet.deleteRow(rowIndex);
     return jsonOutput_({ ok: true });
+}
+
+// ===== 홈페이지 사진 관리 (관리자 페이지 "홈페이지 사진 관리"에서 사용) =====
+// 관리자가 올린 사진을 구글 드라이브에 저장하고, 그 주소를 스크립트 속성에 기억해뒀다가
+// 홈페이지(index.html)가 접속할 때마다 물어봐서 있으면 기본 이미지 대신 그 사진을 보여줍니다.
+
+// 앞으로 다른 사진 항목(예: 갤러리 대표 이미지 등)을 추가하고 싶으면 이 배열에 키만 늘리면 됩니다.
+const SITE_IMAGE_KEYS = ["hero"];
+
+function getOrCreateSiteImagesFolder_(){
+    const props = PropertiesService.getScriptProperties();
+    const folderId = props.getProperty("SITE_IMAGES_FOLDER_ID");
+
+    if(folderId){
+        try{ return DriveApp.getFolderById(folderId); }
+        catch(err){ /* 폴더가 삭제된 경우 아래에서 새로 만듭니다. */ }
+    }
+
+    const folder = DriveApp.createFolder("팡이케어 홈페이지 이미지");
+    props.setProperty("SITE_IMAGES_FOLDER_ID", folder.getId());
+    return folder;
+}
+
+function handleGetSiteImages_(){
+    const props = PropertiesService.getScriptProperties();
+    const images = {};
+
+    SITE_IMAGE_KEYS.forEach(key => {
+        images[key] = props.getProperty("SITE_IMAGE_" + key + "_URL") || null;
+    });
+
+    return jsonOutput_({ ok: true, images: images });
+}
+
+function handleUploadSiteImage_(key, imageBase64, mimeType, adminKey){
+    if(adminKey !== ADMIN_KEY){
+        return jsonOutput_({ ok: false, error: "관리자 인증이 필요합니다." });
+    }
+
+    if(SITE_IMAGE_KEYS.indexOf(key) === -1){
+        return jsonOutput_({ ok: false, error: "알 수 없는 이미지 항목입니다." });
+    }
+
+    if(!imageBase64){
+        return jsonOutput_({ ok: false, error: "이미지 데이터가 없습니다." });
+    }
+
+    try{
+        const folder = getOrCreateSiteImagesFolder_();
+        const props = PropertiesService.getScriptProperties();
+
+        // 이전에 올렸던 사진은 휴지통으로 보내서 드라이브 용량이 계속 쌓이지 않게 합니다.
+        const oldFileId = props.getProperty("SITE_IMAGE_" + key + "_FILE_ID");
+        if(oldFileId){
+            try{ DriveApp.getFileById(oldFileId).setTrashed(true); }
+            catch(err){ /* 이미 지워졌거나 못 찾으면 무시하고 계속 진행합니다. */ }
+        }
+
+        const decoded = Utilities.base64Decode(imageBase64);
+        const blob = Utilities.newBlob(decoded, mimeType || "image/jpeg", key + "-" + nowText_() + ".jpg");
+        const file = folder.createFile(blob);
+        file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+
+        // 구글 드라이브 썸네일 주소 형식: <img> 태그에서 바로 쓸 수 있도록 안정적으로 제공됩니다.
+        const url = "https://drive.google.com/thumbnail?id=" + file.getId() + "&sz=w1600";
+
+        props.setProperty("SITE_IMAGE_" + key + "_FILE_ID", file.getId());
+        props.setProperty("SITE_IMAGE_" + key + "_URL", url);
+
+        return jsonOutput_({ ok: true, url: url });
+    }catch(err){
+        return jsonOutput_({ ok: false, error: "업로드 실패: " + err.message });
+    }
 }
 
 function jsonOutput_(obj){
