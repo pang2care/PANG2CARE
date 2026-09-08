@@ -1243,6 +1243,7 @@ textarea:focus{
         <div class="menu-title">관리</div>
         <div class="menu">
             <button data-view="siteimages">🖼️ 홈페이지 사진 관리</button>
+            <button data-view="pricing">💰 가격표 관리</button>
             <button data-view="settings">⚙️ AI 설정</button>
         </div>
 
@@ -1732,6 +1733,43 @@ textarea:focus{
         </section>
 
 
+        <section id="view-pricing" class="view">
+            <div class="panel">
+                <h2>💰 가격표 관리</h2>
+                <div class="panel-sub">예약 홈페이지 "가격표" 섹션에 나오는 청소 비용을 여기서 직접 바꿀 수 있습니다. 저장을 누르면 별도 배포 없이 바로 홈페이지에 반영돼요.</div>
+
+                <div class="ai-form">
+                    <div>
+                        <label>벽걸이 에어컨 (원)</label>
+                        <input type="number" id="priceWall" min="0" step="1000">
+                    </div>
+                    <div>
+                        <label>스탠드 에어컨 (원)</label>
+                        <input type="number" id="priceStand" min="0" step="1000">
+                    </div>
+                    <div>
+                        <label>2in1 (벽걸이+스탠드) (원)</label>
+                        <input type="number" id="priceCombo" min="0" step="1000">
+                    </div>
+                    <div>
+                        <label>1방향(1 Way) 천장형 (원)</label>
+                        <input type="number" id="priceCeiling1way" min="0" step="1000">
+                    </div>
+                    <div>
+                        <label>4방향(4 Way) 천장형 (원)</label>
+                        <input type="number" id="priceCeiling4way" min="0" step="1000">
+                    </div>
+                </div>
+
+                <div class="ai-toolbar">
+                    <button class="btn btn-primary" id="pricingSaveBtn" onclick="savePricing()">💾 홈페이지에 저장</button>
+                </div>
+
+                <div class="ai-note" id="pricingStatus">※ 불러오는 중...</div>
+            </div>
+        </section>
+
+
         <section id="view-settings" class="view">
             <div class="panel">
                 <h2>⚙️ AI 설정</h2>
@@ -1985,6 +2023,7 @@ function openView(id){
 
     if(id === "dashboard") renderAiDashboard();
     if(id === "siteimages"){ loadSiteHeroCurrent(); loadGalleryPhotos(); }
+    if(id === "pricing") loadPricing();
     if(id === "settings") fillSettingsForm();
     if(id === "blog" || id === "content") prefillAiForms();
     if(id === "blog"){ updateBlogModeUI(); renderPublishQueue(); }
@@ -2971,6 +3010,65 @@ async function loadSiteHeroCurrent(){
             : `<span style="font-size:12px;color:#94a3b8;">아직 바꾼 적 없음 — 기본 이미지가 사용되고 있어요.</span>`;
     }catch(err){
         grid.innerHTML = `<span style="font-size:12px;color:#94a3b8;">현재 사진을 불러오지 못했습니다. (${escapeHtml(err.message)})</span>`;
+    }
+}
+
+/* =========================
+   가격표 관리 — 예약 홈페이지 "가격표" 섹션에 나오는 청소 비용을 관리자가 직접 수정.
+   저장하면 구글 시트(Apps Script) 스크립트 속성에 저장되고, 홈페이지는 접속할 때마다
+   불러와서 있으면 기본 가격 대신 그 값을 보여줌.
+========================= */
+
+const PRICE_FIELD_MAP = {
+    wall: "priceWall",
+    stand: "priceStand",
+    combo: "priceCombo",
+    ceiling1way: "priceCeiling1way",
+    ceiling4way: "priceCeiling4way"
+};
+
+async function loadPricing(){
+    const status = document.getElementById("pricingStatus");
+    status.innerText = "※ 불러오는 중...";
+
+    try{
+        const prices = await apiGetPrices();
+        Object.keys(PRICE_FIELD_MAP).forEach(key => {
+            document.getElementById(PRICE_FIELD_MAP[key]).value = prices[key] != null ? prices[key] : "";
+        });
+        status.innerText = "※ 값을 바꾸고 \"홈페이지에 저장\"을 누르면 바로 반영됩니다.";
+    }catch(err){
+        status.innerText = "❌ 현재 가격을 불러오지 못했습니다. (" + err.message + ")";
+    }
+}
+
+async function savePricing(){
+    const btn = document.getElementById("pricingSaveBtn");
+    const status = document.getElementById("pricingStatus");
+    const originalBtnText = btn.innerText;
+
+    const prices = {};
+    for(const key of Object.keys(PRICE_FIELD_MAP)){
+        const value = Number(document.getElementById(PRICE_FIELD_MAP[key]).value);
+        if(!Number.isFinite(value) || value < 0){
+            status.innerText = "❌ 가격 값을 확인해주세요.";
+            return;
+        }
+        prices[key] = value;
+    }
+
+    btn.disabled = true;
+    btn.innerText = "저장 중...";
+    status.innerText = "저장하는 중입니다. 몇 초 정도 걸릴 수 있어요.";
+
+    try{
+        await apiUpdatePrices(prices, getAdminKey());
+        status.innerText = "✅ 저장 완료! 홈페이지에 바로 반영됐습니다.";
+    }catch(err){
+        status.innerText = "❌ 저장 실패: " + err.message;
+    }finally{
+        btn.disabled = false;
+        btn.innerText = originalBtnText;
     }
 }
 

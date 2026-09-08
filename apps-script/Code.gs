@@ -159,6 +159,11 @@ function doGet(e){
         return handleGetSiteImages_();
     }
 
+    // 홈페이지에서 가격표를 보여줄 때 사용합니다. (로그인 불필요, 공개 정보)
+    if(params0.action === "getPrices"){
+        return handleGetPrices_();
+    }
+
     const sheet = getSheet_();
 
     autoUpdateStatuses_(sheet);
@@ -297,6 +302,10 @@ function doPost(e){
 
     if(body.action === "uploadSiteImage"){
         return handleUploadSiteImage_(body.key, body.imageBase64, body.mimeType, body.adminKey);
+    }
+
+    if(body.action === "updatePrices"){
+        return handleUpdatePrices_(body.prices, body.adminKey);
     }
 
     if(body.action === "uploadGalleryPhoto"){
@@ -601,6 +610,47 @@ function handleReviewDelete_(id, adminKey){
 
     sheet.deleteRow(rowIndex);
     return jsonOutput_({ ok: true });
+}
+
+// ===== 가격표 관리 (관리자 페이지 "가격표 관리"에서 사용) =====
+// 관리자가 입력한 가격을 스크립트 속성에 JSON으로 저장해두고,
+// 홈페이지(index.html)가 접속할 때마다 물어봐서 있으면 기본 가격 대신 그 값을 보여줍니다.
+
+const DEFAULT_PRICES = {
+    wall: 70000,        // 벽걸이 에어컨
+    stand: 120000,      // 스탠드 에어컨
+    combo: 170000,      // 2in1 (벽걸이+스탠드)
+    ceiling1way: 90000, // 1방향(1 Way) 천장형
+    ceiling4way: 110000 // 4방향(4 Way) 천장형
+};
+
+function handleGetPrices_(){
+    const props = PropertiesService.getScriptProperties();
+    const saved = props.getProperty("SITE_PRICES_JSON");
+    const prices = Object.assign({}, DEFAULT_PRICES, saved ? JSON.parse(saved) : {});
+    return jsonOutput_({ ok: true, prices: prices });
+}
+
+function handleUpdatePrices_(prices, adminKey){
+    if(adminKey !== ADMIN_KEY){
+        return jsonOutput_({ ok: false, error: "관리자 인증이 필요합니다." });
+    }
+
+    if(!prices || typeof prices !== "object"){
+        return jsonOutput_({ ok: false, error: "가격 데이터가 없습니다." });
+    }
+
+    const next = {};
+    for(const key of Object.keys(DEFAULT_PRICES)){
+        const value = Number(prices[key]);
+        if(!Number.isFinite(value) || value < 0){
+            return jsonOutput_({ ok: false, error: "가격 값이 올바르지 않습니다: " + key });
+        }
+        next[key] = Math.round(value);
+    }
+
+    PropertiesService.getScriptProperties().setProperty("SITE_PRICES_JSON", JSON.stringify(next));
+    return jsonOutput_({ ok: true, prices: next });
 }
 
 // ===== 홈페이지 사진 관리 (관리자 페이지 "홈페이지 사진 관리"에서 사용) =====

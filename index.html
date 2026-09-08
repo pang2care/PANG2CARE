@@ -825,7 +825,7 @@ footer:before{content:"";position:absolute;top:0;left:0;right:0;height:2px;backg
                             <span>살균·소독</span>
                         </div>
 
-                        <div class="price-value">
+                        <div class="price-value" data-price="wall">
                             70,000원<small>~</small>
                         </div>
 
@@ -846,7 +846,7 @@ footer:before{content:"";position:absolute;top:0;left:0;right:0;height:2px;backg
                             <span>살균·소독</span>
                         </div>
 
-                        <div class="price-value">
+                        <div class="price-value" data-price="stand">
                             120,000원<small>~</small>
                         </div>
 
@@ -869,7 +869,7 @@ footer:before{content:"";position:absolute;top:0;left:0;right:0;height:2px;backg
                             <span>살균·소독</span>
                         </div>
 
-                        <div class="price-value">
+                        <div class="price-value" data-price="combo">
                             170,000원<small>~</small>
                         </div>
 
@@ -904,7 +904,7 @@ footer:before{content:"";position:absolute;top:0;left:0;right:0;height:2px;backg
                             <span>고압 세척</span>
                         </div>
 
-                        <div class="price-value">
+                        <div class="price-value" data-price="ceiling1way">
                             90,000원<small>~</small>
                         </div>
 
@@ -926,7 +926,7 @@ footer:before{content:"";position:absolute;top:0;left:0;right:0;height:2px;backg
                             <span>고압 세척</span>
                         </div>
 
-                        <div class="price-value">
+                        <div class="price-value" data-price="ceiling4way">
                             110,000원<small>~</small>
                         </div>
 
@@ -1855,6 +1855,21 @@ document.getElementById("customAlertOverlay").addEventListener("click", function
         }
     }catch(err){
         /* 무시: 기본 이미지를 계속 보여줍니다. */
+    }
+})();
+
+/* 관리자가 "가격표 관리"에서 가격을 바꾼 적이 있으면 불러와서 교체합니다.
+   실패하거나 아직 바꾼 적이 없으면 화면에 미리 적힌 기본 가격을 그대로 보여줍니다. */
+(async function loadCustomPrices(){
+    try{
+        const prices = await apiGetPrices();
+        document.querySelectorAll("[data-price]").forEach(el => {
+            const key = el.dataset.price;
+            if(prices[key] == null) return;
+            el.innerHTML = Number(prices[key]).toLocaleString("ko-KR") + "원<small>~</small>";
+        });
+    }catch(err){
+        /* 무시: 기본 가격을 계속 보여줍니다. */
     }
 })();
 

@@ -121,6 +121,25 @@ async function apiDeleteReview(id, adminKey){
     return json;
 }
 
+/* 관리자가 "가격표 관리"에서 바꾼 가격이 있는지 조회합니다. (로그인 불필요) */
+async function apiGetPrices(){
+    const res = await fetch(SHEET_API_URL + "?action=getPrices", { method: "GET" });
+    const json = await res.json();
+    if(!json.ok) throw new Error(json.error || "가격 정보를 불러오지 못했습니다.");
+    return json.prices;
+}
+
+async function apiUpdatePrices(prices, adminKey){
+    const res = await fetch(SHEET_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ action: "updatePrices", prices, adminKey: adminKey || "" })
+    });
+    const json = await res.json();
+    if(!json.ok) throw new Error(json.error || "가격 저장에 실패했습니다.");
+    return json.prices;
+}
+
 /* 관리자가 "홈페이지 사진 관리"에서 바꾼 사진이 있는지 조회합니다. (로그인 불필요) */
 async function apiGetSiteImages(){
     const res = await fetch(SHEET_API_URL + "?action=getSiteImages", { method: "GET" });
