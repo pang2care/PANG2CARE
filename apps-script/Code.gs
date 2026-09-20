@@ -9,6 +9,26 @@ const ADMIN_KEY = "1354";
 //  이 값은 진짜 비밀번호급 보안 코드라 공개 저장소인 이 코드에는 넣지 않습니다.)
 const KAKAO_REST_API_KEY = "9ab7849cbdc03e9778ae1429f0ea938a";
 
+// 새 예약이 들어오면 실제 휴대폰 문자(SMS)로도 알림을 보내기 위한 설정입니다.
+// solapi.com (솔라피, 구 쿨SMS) 가입 후 [API Key 관리]에서 발급받은 값을 넣으세요.
+// API SECRET은 비밀번호급 정보라 (유출되면 남이 이 계정으로 문자를 보내 요금이 청구될 수
+// 있음) 공개 저장소인 이 코드에 직접 적지 않고, Apps Script 편집기 좌측 "프로젝트 설정"
+// (톱니바퀴 아이콘) > "스크립트 속성"에 아래 4개 키로 각각 등록해서 씁니다.
+// - SOLAPI_API_KEY, SOLAPI_API_SECRET: API Key 발급 화면에서 확인 (IP 제한은 반드시
+//   "모든 IP 허용"으로 — 구글 앱스 스크립트는 고정 IP가 없어서 특정 IP만 허용하면 막힘)
+// - SOLAPI_SENDER: 솔라피에 사전등록(본인인증)해둔 발신번호 (하이픈 없이 숫자만)
+// - SOLAPI_RECEIVER: 알림을 받을 휴대폰 번호 (하이픈 없이 숫자만)
+// 스크립트 속성에 값이 없으면 문자 발송은 건너뛰고 예약 저장은 평소대로 진행됩니다.
+function getSolapiConfig_(){
+    const props = PropertiesService.getScriptProperties();
+    return {
+        apiKey: props.getProperty("SOLAPI_API_KEY"),
+        apiSecret: props.getProperty("SOLAPI_API_SECRET"),
+        sender: props.getProperty("SOLAPI_SENDER"),
+        receiver: props.getProperty("SOLAPI_RECEIVER")
+    };
+}
+
 const COLUMNS = [
     { key: "createdAt", label: "접수시간" },
     { key: "name",       label: "이름" },
@@ -345,14 +365,60 @@ function handleCreate_(sheet, data){
     range.setNumberFormat("@");
     range.setValues([row]);
 
-    // 카카오톡 알림이 실패하더라도(연동 전, 토큰 만료 등) 예약 저장 자체는 항상 성공해야 합니다.
+    // 카카오톡/문자 알림이 실패하더라도(연동 전, 토큰 만료, 잔액 부족 등) 예약 저장 자체는
+    // 항상 성공해야 하므로 각각 따로 try/catch로 감쌉니다.
     try{
         sendKakaoNotification_(data);
     }catch(err){
         // 무시: 알림은 부가 기능이라 예약 처리를 막지 않습니다.
     }
 
+    try{
+        sendSmsNotification_(data);
+    }catch(err){
+        // 무시: 알림은 부가 기능이라 예약 처리를 막지 않습니다.
+    }
+
     return jsonOutput_({ ok: true, id: id });
+}
+
+// ===== 휴대폰 문자(SMS) 알림 (솔라피 API) =====
+// 스크립트 속성에 설정값이 없으면 아무 동작 없이 건너뜁니다.
+// 예약 확인용이라 요금이 가장 저렴한 단문(SMS)으로 나가도록, 주소는 빼고
+// 이름/연락처/일시만 짧게 담습니다.
+
+function solapiAuthHeader_(config){
+    const date = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
+    const salt = Utilities.getUuid().replace(/-/g, "").substring(0, 20);
+    const signatureBytes = Utilities.computeHmacSha256Signature(date + salt, config.apiSecret);
+    const signature = signatureBytes.map(function(b){
+        return ((b < 0 ? b + 256 : b).toString(16)).padStart(2, "0");
+    }).join("");
+
+    return "HMAC-SHA256 apiKey=" + config.apiKey + ", date=" + date + ", salt=" + salt + ", signature=" + signature;
+}
+
+function sendSmsNotification_(data){
+    const config = getSolapiConfig_();
+    if(!config.apiKey || !config.apiSecret || !config.sender || !config.receiver){
+        return "건너뜀: SOLAPI_API_KEY/SOLAPI_API_SECRET/SOLAPI_SENDER/SOLAPI_RECEIVER 스크립트 속성이 설정되어 있지 않음";
+    }
+
+    const msg = "[팡이케어] 새예약 " +
+        (data.name || "") + "/" + (data.phone || "") + "/" +
+        (data.date || "") + " " + (data.time || "");
+
+    const resp = UrlFetchApp.fetch("https://api.solapi.com/messages/v4/send", {
+        method: "post",
+        contentType: "application/json",
+        headers: { Authorization: solapiAuthHeader_(config) },
+        payload: JSON.stringify({
+            message: { to: config.receiver, from: config.sender, text: msg }
+        }),
+        muteHttpExceptions: true
+    });
+
+    return "응답 " + resp.getResponseCode() + ": " + resp.getContentText();
 }
 
 // ===== 카카오톡 "나에게 보내기" 알림 =====
