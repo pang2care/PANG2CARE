@@ -1511,23 +1511,6 @@ textarea:focus{
                         <label>실제 작업 후기 / 특이사항</label>
                         <textarea id="story" placeholder="실제 있었던 작업 내용을 적어주세요."></textarea>
                     </div>
-
-                    <div>
-                        <label>세척 전 사진</label>
-                        <label class="photo-picker" for="blogPhotoInputBefore">
-                            <span>📷 클릭해서 세척 전 사진을 선택하세요 (여러 장 가능)</span>
-                            <input type="file" id="blogPhotoInputBefore" accept="image/*" multiple onchange="handleBlogPhotos(event, 'before')">
-                        </label>
-                        <div class="photo-grid" id="blogPhotoGridBefore"></div>
-                    </div>
-                    <div>
-                        <label>세척 후 사진</label>
-                        <label class="photo-picker" for="blogPhotoInputAfter">
-                            <span>📷 클릭해서 세척 후 사진을 선택하세요 (여러 장 가능)</span>
-                            <input type="file" id="blogPhotoInputAfter" accept="image/*" multiple onchange="handleBlogPhotos(event, 'after')">
-                        </label>
-                        <div class="photo-grid" id="blogPhotoGridAfter"></div>
-                    </div>
                 </div>
 
                 <div class="ai-toolbar">
@@ -1536,7 +1519,7 @@ textarea:focus{
                 </div>
 
                 <div id="blogResult" class="ai-result"></div>
-                <div class="ai-note">※ 실제 있었던 내용만 입력해주세요. 초안은 게시 전 반드시 확인해주세요. 첨부한 사진은 이 브라우저 화면에서만 미리보기로 보이며, 어디에도 업로드되지 않습니다 — 실제 블로그에 올릴 때 직접 첨부해주세요.</div>
+                <div class="ai-note">※ 실제 있었던 내용만 입력해주세요. 초안은 게시 전 반드시 확인해주세요. 세척 전/후 사진은 실제 블로그에 올릴 때 직접 첨부해주세요.</div>
             </div>
 
             <div class="panel" id="blogQueueSection">
@@ -4440,54 +4423,6 @@ ${hashtags}`;
     logActivity("홍보 영상 게시글 문구 생성");
 }
 
-/* 블로그 사진 첨부 — 세척 전/후로 구분해서 관리. 서버에 업로드하지 않고, 이 브라우저 화면에서만 미리보기로 보여줍니다. */
-
-let blogPhotos = { before: [], after: [] };
-
-function handleBlogPhotos(event, group){
-    const files = Array.from(event.target.files || []);
-
-    files.forEach(file => {
-        blogPhotos[group].push({ url: URL.createObjectURL(file), name: file.name });
-    });
-
-    event.target.value = "";
-    renderBlogPhotos(group);
-}
-
-function removeBlogPhoto(group, index){
-    URL.revokeObjectURL(blogPhotos[group][index].url);
-    blogPhotos[group].splice(index, 1);
-    renderBlogPhotos(group);
-}
-
-function renderBlogPhotos(group){
-    const grid = document.getElementById(group === "before" ? "blogPhotoGridBefore" : "blogPhotoGridAfter");
-    grid.innerHTML = blogPhotos[group].map((p, i) => `
-        <div class="photo-thumb">
-            <img src="${p.url}" alt="${p.name}" onclick="openPhotoLightbox('${p.url}')">
-            <button type="button" onclick="removeBlogPhoto('${group}', ${i})" title="삭제">×</button>
-        </div>
-    `).join("");
-}
-
-function blogPhotoTotal(){
-    return blogPhotos.before.length + blogPhotos.after.length;
-}
-
-function buildBlogPhotoLine(){
-    const parts = [];
-    if(blogPhotos.before.length){
-        parts.push(`📷 세척 전 사진 ${blogPhotos.before.length}장 — ${blogPhotos.before.map(p => p.name).join(", ")}`);
-    }
-    if(blogPhotos.after.length){
-        parts.push(`📷 세척 후 사진 ${blogPhotos.after.length}장 — ${blogPhotos.after.map(p => p.name).join(", ")}`);
-    }
-    return parts.length
-        ? `\n${parts.join("\n")}\n(세척 전/후 사진을 구분해서 본문에 배치해주세요.)\n`
-        : "";
-}
-
 const WORK_METHOD = "완전분해 세척";
 
 /* 작업후기 문장 다듬기 — 실제 AI 호출 없이, 한글 음절을 초성/중성/종성으로 분해해서
@@ -4583,13 +4518,12 @@ function collectBlogInput(){
         region: document.getElementById("region").value || "우리 동네",
         type: document.getElementById("type").value,
         condition: document.getElementById("condition").value || "내부 오염이 의심되는 상태",
-        story: document.getElementById("story").value || "",
-        photoLine: buildBlogPhotoLine()
+        story: document.getElementById("story").value || ""
     };
 }
 
 function buildNaverBlogDraft(input){
-    const { region, type, condition, photoLine } = input;
+    const { region, type, condition } = input;
     const story = polishStoryText(input.story);
 
     const intro = pickVariant(STORY_WRAPPERS.naverBlog, blogLastPick.naverBlog);
@@ -4608,7 +4542,7 @@ ${intro.text}
 ${story || "(작업 특이사항을 입력하면 이 자리에 반영됩니다.)"}
 
 에어컨은 겉으로 깨끗해 보여도 내부 열교환기와 송풍 부위에 오염이 쌓일 수 있습니다. 냄새나 바람 상태가 평소와 다르다면 내부 상태를 확인해 보는 것이 좋습니다.
-${photoLine}
+
 ※ 위 내용은 실제 작업 정보를 바탕으로 작성한 초안입니다. 게시 전 작업 사진과 실제 내용을 확인해 주세요.`
     );
 }
@@ -4666,7 +4600,7 @@ function generateBlog(){
         el.textContent = buildNaverBlogDraft(input);
     }
 
-    logActivity("AI 블로그 초안 생성" + (blogPhotoTotal() ? ` (사진 ${blogPhotoTotal()}장)` : ""));
+    logActivity("AI 블로그 초안 생성");
 }
 
 function clearBlogForm(){
@@ -4679,12 +4613,6 @@ function clearBlogForm(){
     document.getElementById("type").selectedIndex = 0;
     document.getElementById("condition").value = "";
     document.getElementById("story").value = "";
-
-    blogPhotos.before.forEach(p => URL.revokeObjectURL(p.url));
-    blogPhotos.after.forEach(p => URL.revokeObjectURL(p.url));
-    blogPhotos = { before: [], after: [] };
-    renderBlogPhotos("before");
-    renderBlogPhotos("after");
 
     const el = document.getElementById("blogResult");
     el.style.display = "none";
